@@ -1,0 +1,6 @@
+strands-agents==1.61.1
+strands-decider
+boto3==1.43.114
+botocore[crt]
+python-dotenv==1.2.4
+pytest
