@@ -11,7 +11,14 @@ from src.decider_client import (
     DeciderInvalidResponseError,
     DeciderValidationError,
 )
-from src.diagnostics import inspect_dependencies, inspect_source, run_tests
+from src.diagnostics import (
+    inspect_dependencies,
+    inspect_source,
+    run_tests,
+    check_dependency,
+    _extract_module_from_error,
+    MODULE_NAME_PATTERN,
+)
 from src.analysis import analyze_root_cause
 
 
@@ -19,8 +26,17 @@ MAX_STEPS = 3
 MAX_STEPS_LIMIT = 10  # Hard upper bound
 
 
-def execute_action(action: str, config: TargetProjectConfig) -> dict[str, Any]:
+def execute_action(
+    action: str,
+    config: TargetProjectConfig,
+    arguments: dict[str, Any] | None = None,
+    error: str | None = None,
+    evidence_history: list[str] | None = None,
+) -> dict[str, Any]:
     """Execute only a recognized diagnostic action."""
+    arguments = arguments or {}
+    evidence_history = evidence_history or []
+
     if action == "inspect_dependencies":
         return inspect_dependencies(config)
 
@@ -29,6 +45,33 @@ def execute_action(action: str, config: TargetProjectConfig) -> dict[str, Any]:
 
     if action == "run_tests":
         return run_tests(config)
+
+    if action == "check_dependency":
+        # Derive the module name from trusted investigation context, never
+        # from arguments supplied by the Decider (which may be empty or
+        # attacker-controlled).
+        module_name = _derive_module_name(error, evidence_history)
+        if not module_name:
+            return {
+                "action": "check_dependency",
+                "project_path": str(config.root),
+                "module": "",
+                "command": None,
+                "exit_code": None,
+                "status": "insufficient_context",
+                "stdout": "",
+                "stderr": (
+                    "Cannot check dependency: no module name could be derived "
+                    "from the reported error or verified evidence."
+                ),
+                "timeout": config.test_timeout,
+                "evidence": (
+                    "Insufficient context: check_dependency requires a module "
+                    "name, but none could be derived from the reported error "
+                    "or verified evidence. Provide the module name explicitly."
+                ),
+            }
+        return check_dependency(config, module_name)
 
     if action == "stop_and_report":
         return {
@@ -45,6 +88,33 @@ def summarize_result(result: dict[str, Any]) -> str:
     import json
 
     return json.dumps(result, ensure_ascii=False, default=str)[:6000]
+
+
+def _derive_module_name(
+    error: str | None,
+    evidence_history: list[str],
+) -> str:
+    """Derive a module name from trusted investigation context.
+
+    Preference order:
+    1. Parse the module name from a reported ModuleNotFoundError.
+    2. Scan verified evidence for a module name (e.g. import statements or
+       dependency declarations already confirmed by diagnostics).
+    3. Return an empty string if the module remains ambiguous.
+    """
+    if error:
+        candidate = _extract_module_from_error(error)
+        if candidate and MODULE_NAME_PATTERN.match(candidate):
+            return candidate
+
+    # Fall back to verified evidence only when the error did not yield a
+    # usable name. Avoid accepting anything the Decider may have supplied.
+    for entry in evidence_history:
+        candidate = _extract_module_from_error(entry)
+        if candidate and MODULE_NAME_PATTERN.match(candidate):
+            return candidate
+
+    return ""
 
 
 def investigate(
@@ -76,6 +146,10 @@ def investigate(
             "Execute the project's test suite to gather runtime evidence. "
             "Runs a predefined test command (default: pytest) with timeout "
             "and output limits. Does not install dependencies or modify files."
+        ),
+        "check_dependency": (
+            "Check whether a specific Python module is importable using the "
+            "project's interpreter. Does not install packages or modify files."
         ),
         "stop_and_report": (
             "Stop collecting evidence and report what is currently known."
@@ -125,7 +199,14 @@ def investigate(
             })
             break
 
-        result = execute_action(selected, config)
+        arguments = decision.get("arguments", {}) or {}
+        result = execute_action(
+            selected,
+            config,
+            arguments=arguments,
+            error=error,
+            evidence_history=evidence_history,
+        )
         executed_actions.append(selected)
 
         history.append({
@@ -140,9 +221,11 @@ def investigate(
             f"{summarize_result(result)}"
         )
 
-        # Stop on diagnostic errors instead of treating them as evidence
-        # that the original application has a particular root cause.
-        if "error" in result:
+        # Stop only on genuine diagnostic-tool failures (error/timeout) that
+        # prevent progress. Do not stop on legitimate findings (installed,
+        # missing, insufficient_context) — those are evidence for the Decider.
+        result_status = result.get("status", "")
+        if result_status in ("error", "timeout"):
             break
 
         if len(executed_actions) >= len(action_descriptions) - 1:
@@ -162,6 +245,15 @@ def investigate(
             else "investigation_finished"
         ),
     }
+
+    # When the step budget is exhausted, add a clear truncation notice so
+    # the final report does not misrepresent incomplete evidence as sufficient.
+    if investigation["stop_reason"] == "maximum_steps_reached":
+        investigation["truncation_notice"] = (
+            f"Investigation was truncated after {max_steps} step(s). "
+            "Not all diagnostic actions could be executed; the final report "
+            "reflects only the evidence collected before truncation."
+        )
 
     # Generate final root-cause analysis using Bedrock
     analysis = analyze_root_cause(investigation)

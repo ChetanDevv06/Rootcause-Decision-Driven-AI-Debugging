@@ -1,8 +1,15 @@
 from pathlib import Path
+import sys
+import subprocess
 from unittest.mock import patch, MagicMock
 
 from src.config import TargetProjectConfig
-from src.diagnostics import inspect_dependencies, inspect_source, run_tests
+from src.diagnostics import (
+    inspect_dependencies,
+    inspect_source,
+    run_tests,
+    check_dependency,
+)
 
 
 def test_inspect_dependencies_reads_requirements(tmp_path: Path):
@@ -587,3 +594,447 @@ def test_tool_exceptions_handled(tmp_path: Path):
     # Empty directory should not raise
     assert result["action"] == "inspect_source"
     assert "files_found" in result
+def test_run_tests_uses_current_interpreter(tmp_path: Path):
+    config = TargetProjectConfig(
+        str(tmp_path),
+        test_command=["python", "-m", "pytest", "-v", "--tb=short"],
+    )
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        result = run_tests(config)
+
+    assert result["command"][0] == sys.executable
+    assert mock_run.call_args.args[0][0] == sys.executable
+
+
+def test_run_tests_missing_pytest_is_environment_failure(tmp_path: Path):
+    config = TargetProjectConfig(
+        str(tmp_path),
+        test_command=["python", "-m", "pytest", "-v", "--tb=short"],
+    )
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="No module named pytest",
+        )
+        result = run_tests(config)
+
+    assert result["status"] == "error"
+    assert result["exit_code"] == 1
+    assert "environment/tooling failure" in result["evidence"]
+
+
+def test_check_dependency_installed_module(tmp_path: Path):
+    """Test that an installed module (sys) is reported as installed."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        result = check_dependency(config, "sys")
+
+    assert result["action"] == "check_dependency"
+    assert result["module"] == "sys"
+    assert result["status"] == "installed"
+    assert result["command"] == [sys.executable, "-c", "import sys"]
+    assert result["exit_code"] == 0
+    assert mock_run.call_args.args[0] == [sys.executable, "-c", "import sys"]
+    assert mock_run.call_args.kwargs["shell"] is False
+    assert mock_run.call_args.kwargs["cwd"] == tmp_path.resolve()
+    assert "importable" in result["evidence"]
+
+
+def test_check_dependency_missing_module(tmp_path: Path):
+    """Test that a missing module is reported as missing."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="ModuleNotFoundError: No module named 'nonexistent_module_xyz'",
+        )
+        result = check_dependency(config, "nonexistent_module_xyz")
+
+    assert result["action"] == "check_dependency"
+    assert result["module"] == "nonexistent_module_xyz"
+    assert result["status"] == "missing"
+    assert result["exit_code"] == 1
+    assert "not importable" in result["evidence"]
+
+
+def test_check_dependency_import_error_reported_as_missing(tmp_path: Path):
+    """Test that ImportError is also reported as missing."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="ImportError: cannot import name 'foo'",
+        )
+        result = check_dependency(config, "some_module")
+
+    assert result["status"] == "missing"
+
+
+def test_check_dependency_timeout(tmp_path: Path):
+    """Test timeout handling."""
+    config = TargetProjectConfig(str(tmp_path), test_timeout=1)
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.side_effect = subprocess.TimeoutExpired(
+            cmd=[sys.executable, "-c", "import sys"], timeout=1
+        )
+        result = check_dependency(config, "sys")
+
+    assert result["status"] == "timeout"
+    assert result["exit_code"] is None
+    assert "timed out" in result["evidence"].lower()
+
+
+def test_check_dependency_invalid_module_name(tmp_path: Path):
+    """Test that invalid module names are rejected before execution."""
+    config = TargetProjectConfig(str(tmp_path))
+
+    result = check_dependency(config, "")
+    assert result["status"] == "insufficient_context"
+    assert result["exit_code"] is None
+    assert "insufficient context" in result["evidence"].lower()
+
+    result = check_dependency(config, "not a valid module")
+    assert result["status"] == "insufficient_context"
+    assert "insufficient context" in result["evidence"].lower()
+
+    result = check_dependency(config, "; rm -rf /")
+    assert result["status"] == "insufficient_context"
+    assert "insufficient context" in result["evidence"].lower()
+
+    result = check_dependency(config, "..")
+    assert result["status"] == "insufficient_context"
+
+
+def test_check_dependency_command_not_split(tmp_path: Path):
+    """Test that the interpreter path with spaces remains a single argument."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        result = check_dependency(config, "sys")
+
+    cmd = result["command"]
+    assert cmd[0] == sys.executable
+    assert cmd == [sys.executable, "-c", "import sys"]
+    assert len(cmd) == 3
+
+
+def test_check_dependency_working_directory(tmp_path: Path):
+    """Test that cwd is set to the validated target project path."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        check_dependency(config, "sys")
+
+    assert mock_run.call_args.kwargs["cwd"] == tmp_path.resolve()
+
+
+def test_check_dependency_bounded_output(tmp_path: Path):
+    """Test that output is bounded by max_test_output."""
+    config = TargetProjectConfig(str(tmp_path), max_test_output=50)
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="x" * 10000, stderr=""
+        )
+        result = check_dependency(config, "sys")
+
+    assert len(result["stdout"]) <= 50
+
+
+def test_check_dependency_no_module_argument(tmp_path: Path):
+    """Test that check_dependency without derivable context returns insufficient_context."""
+    from src.orchestrator import execute_action
+
+    config = TargetProjectConfig(str(tmp_path))
+    # No error or evidence provided → cannot derive a module name.
+    result = execute_action("check_dependency", config, arguments={})
+
+    assert result["action"] == "check_dependency"
+    assert result["status"] == "insufficient_context"
+    assert result["exit_code"] is None
+    assert "insufficient context" in result["evidence"].lower()
+
+
+def test_check_dependency_derives_module_from_error(tmp_path: Path):
+    """Test that execute_action derives the module name from the reported error."""
+    from src.orchestrator import execute_action
+
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.orchestrator.check_dependency") as mock_check:
+        mock_check.return_value = {
+            "action": "check_dependency",
+            "module": "psycopg",
+            "status": "missing",
+        }
+        result = execute_action(
+            "check_dependency",
+            config,
+            arguments={},
+            error="ModuleNotFoundError: No module named 'psycopg'",
+        )
+
+    mock_check.assert_called_once()
+    assert mock_check.call_args.args[1] == "psycopg"
+    assert result["status"] == "missing"
+
+
+def test_check_dependency_derives_module_from_evidence(tmp_path: Path):
+    """Test that execute_action derives the module name from verified evidence."""
+    from src.orchestrator import execute_action
+
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.orchestrator.check_dependency") as mock_check:
+        mock_check.return_value = {
+            "action": "check_dependency",
+            "module": "psycopg",
+            "status": "installed",
+        }
+        result = execute_action(
+            "check_dependency",
+            config,
+            arguments={},
+            error="Application failed to start",
+            evidence_history=[
+                "inspect_source: app.py contains 'import psycopg'",
+            ],
+        )
+
+    mock_check.assert_called_once()
+    assert mock_check.call_args.args[1] == "psycopg"
+    assert result["status"] == "installed"
+
+
+def test_check_dependency_insufficient_context_when_ambiguous(tmp_path: Path):
+    """Test that execute_action returns insufficient_context when module is ambiguous."""
+    from src.orchestrator import execute_action
+
+    config = TargetProjectConfig(str(tmp_path))
+    result = execute_action(
+        "check_dependency",
+        config,
+        arguments={},
+        error="Something went wrong",
+        evidence_history=["inspect_source: read 5 files"],
+    )
+
+    assert result["action"] == "check_dependency"
+    assert result["status"] == "insufficient_context"
+    assert result["exit_code"] is None
+    assert "insufficient context" in result["evidence"].lower()
+
+
+def test_derive_module_name_prefers_error_over_evidence():
+    """Test that _derive_module_name prefers the reported error over evidence."""
+    from src.orchestrator import _derive_module_name
+
+    result = _derive_module_name(
+        "ModuleNotFoundError: No module named 'psycopg'",
+        ["inspect_source: app.py imports 'some_other_module'"],
+    )
+    assert result == "psycopg"
+
+
+def test_derive_module_name_falls_back_to_evidence():
+    """Test that _derive_module_name falls back to verified evidence."""
+    from src.orchestrator import _derive_module_name
+
+    result = _derive_module_name(
+        "Application failed to start",
+        ["inspect_source: app.py contains 'import psycopg'"],
+    )
+    assert result == "psycopg"
+
+
+def test_derive_module_name_returns_empty_when_ambiguous():
+    """Test that _derive_module_name returns empty when module is ambiguous."""
+    from src.orchestrator import _derive_module_name
+
+    result = _derive_module_name("Something went wrong", ["inspect_source: read 5 files"])
+    assert result == ""
+
+    result = _derive_module_name(None, [])
+    assert result == ""
+
+
+def test_check_dependency_fixture_passing_but_failure_reproducing(tmp_path: Path):
+    """Test that check_dependency identifies a missing module even when tests pass.
+
+    This simulates the fixture scenario: tests pass because they assert the
+    import failure, but check_dependency reveals psycopg is genuinely missing
+    from the runtime environment. Test-suite success does not imply app health.
+    """
+    config = TargetProjectConfig(str(tmp_path))
+
+    # Tests pass (they assert psycopg is missing)
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="1 passed", stderr="")
+        test_result = run_tests(config)
+
+    assert test_result["status"] == "passed"
+
+    # But check_dependency reveals psycopg is missing
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="ModuleNotFoundError: No module named 'psycopg'",
+        )
+        dep_result = check_dependency(config, "psycopg")
+
+    assert dep_result["status"] == "missing"
+    # A passing test suite does NOT mean the application is healthy
+    assert test_result["status"] != dep_result["status"]
+
+
+def test_check_dependency_reports_interpreter(tmp_path: Path):
+    """Test that check_dependency reports the exact interpreter used."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        result = check_dependency(config, "sys")
+
+    assert result["interpreter"] == sys.executable
+    assert "interpreter" in result["evidence"]
+    assert sys.executable in result["evidence"]
+
+
+def test_check_dependency_tool_failure_is_not_app_evidence(tmp_path: Path):
+    """Test that check_dependency error/timeout is a tool failure, not app evidence."""
+    config = TargetProjectConfig(str(tmp_path))
+
+    # Tool execution error
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.side_effect = OSError("Permission denied")
+        result = check_dependency(config, "psycopg")
+
+    assert result["status"] == "error"
+    assert "Execution error" in result["stderr"]
+    # An error status is NOT evidence that psycopg is missing
+    assert result["status"] != "missing"
+
+    # Timeout
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.side_effect = subprocess.TimeoutExpired(
+            cmd=[sys.executable, "-c", "import psycopg"], timeout=5
+        )
+        result = check_dependency(config, "psycopg")
+
+    assert result["status"] == "timeout"
+    assert result["exit_code"] is None
+    # A timeout is NOT evidence that psycopg is missing
+    assert result["status"] != "missing"
+
+
+def test_check_dependency_insufficient_context_is_not_missing(tmp_path: Path):
+    """Test that insufficient_context is not confused with a missing module."""
+    config = TargetProjectConfig(str(tmp_path))
+
+    # Invalid module name → insufficient_context, not missing
+    result = check_dependency(config, "")
+    assert result["status"] == "insufficient_context"
+    assert result["status"] != "missing"
+
+    # Ambiguous module → insufficient_context
+    result = check_dependency(config, "not valid")
+    assert result["status"] == "insufficient_context"
+    assert result["status"] != "missing"
+
+
+def test_run_tests_tool_failure_is_not_app_evidence(tmp_path: Path):
+    """Test that run_tests errors are tool failures, not root cause evidence."""
+    config = TargetProjectConfig(
+        str(tmp_path),
+        test_command=["nonexistent_runner"],
+        test_timeout=5,
+    )
+
+    result = run_tests(config)
+
+    assert result["status"] == "error"
+    assert result["exit_code"] is None
+    # Tool failure is not evidence about the application
+    assert result["status"] != "passed"
+    assert result["status"] != "failed"
+
+
+def test_evidence_sufficient_when_runtime_unverified():
+    """Test that evidence_sufficient is false when runtime not verified."""
+    from src.analysis import RootCauseReport
+
+    # Runtime NOT verified: check_dependency returned insufficient_context
+    report = RootCauseReport(
+        confirmed_observations=["requirements.txt declares psycopg"],
+        most_likely_cause="Missing dependency: psycopg",
+        alternative_explanations=["Interpreter mismatch"],
+        evidence_supporting={"Missing dependency": ["requirements.txt"]},
+        remaining_uncertainty=[
+            "Runtime environment not verified: check_dependency returned insufficient_context",
+            "Interpreter used for check_dependency not confirmed",
+        ],
+        recommended_next_step="Verify psycopg importability with check_dependency",
+        suggested_fix=None,
+        evidence_sufficient=False,
+    )
+    assert report.evidence_sufficient is False
+    assert len(report.remaining_uncertainty) > 0
+
+
+def test_evidence_sufficient_when_runtime_verified():
+    """Test that evidence_sufficient can be true when runtime verified."""
+    from src.analysis import RootCauseReport
+
+    # Runtime verified: check_dependency returned missing for psycopg
+    report = RootCauseReport(
+        confirmed_observations=[
+            "requirements.txt declares psycopg[binary]>=3.2",
+            "app.py imports psycopg at module level",
+            "check_dependency: psycopg is not importable using interpreter /path/to/python",
+        ],
+        most_likely_cause="Missing dependency: psycopg not installed in runtime environment",
+        alternative_explanations=["Wrong Python interpreter being used"],
+        evidence_supporting={
+            "Missing dependency": [
+                "requirements.txt declares psycopg",
+                "check_dependency reports psycopg as missing",
+            ]
+        },
+        remaining_uncertainty=[
+            "Whether installing psycopg resolves the issue without other missing dependencies",
+        ],
+        recommended_next_step="Install dependencies with pip install -r requirements.txt",
+        suggested_fix="pip install -r requirements.txt",
+        evidence_sufficient=True,
+    )
+    assert report.evidence_sufficient is True
+    assert "not verified" not in str(report.remaining_uncertainty).lower()
+
+
+def test_check_dependency_missing_module_reports_interpreter(tmp_path: Path):
+    """Test that a missing module result includes the interpreter."""
+    config = TargetProjectConfig(str(tmp_path))
+    with patch("src.diagnostics.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="ModuleNotFoundError: No module named 'psycopg'",
+        )
+        result = check_dependency(config, "psycopg")
+
+    assert result["status"] == "missing"
+    assert result["interpreter"] == sys.executable
+    assert sys.executable in result["evidence"]
+
+
+def test_extract_module_from_error():
+    """Test extracting module names from error messages."""
+    from src.diagnostics import _extract_module_from_error
+
+    assert _extract_module_from_error("ModuleNotFoundError: No module named 'psycopg'") == "psycopg"
+    assert _extract_module_from_error('ModuleNotFoundError: No module named "psycopg"') == "psycopg"
+    assert _extract_module_from_error("import nonexistent_module") == "nonexistent_module"
+    assert _extract_module_from_error("Some other error") == ""
+    assert _extract_module_from_error("") == ""

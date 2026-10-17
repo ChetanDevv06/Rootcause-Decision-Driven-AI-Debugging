@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Final
 import subprocess
 import os
+import re
+import sys
 
 from src.config import (
     EXCLUDED_DIRS,
@@ -183,6 +185,14 @@ def run_tests(config: TargetProjectConfig) -> dict:
 
     # Build the command as a list (no shell=True)
     cmd = list(config.test_command)
+    # Use the current interpreter for pytest instead of relying on PATH.
+    if (
+        len(cmd) >= 3
+        and cmd[0] in {"python", "python3", "python.exe"}
+        and cmd[1] == "-m"
+        and cmd[2] == "pytest"
+    ):
+        cmd[0] = sys.executable
 
     try:
         result = subprocess.run(
@@ -192,6 +202,7 @@ def run_tests(config: TargetProjectConfig) -> dict:
             text=True,
             timeout=config.test_timeout,
             env=_filter_environment(),
+            shell=False,
         )
 
         stdout = result.stdout[: config.max_test_output]
@@ -201,7 +212,10 @@ def run_tests(config: TargetProjectConfig) -> dict:
         stdout = _redact_dict(stdout)
         stderr = _redact_dict(stderr)
 
-        if result.returncode == 0:
+        if "No module named pytest" in (result.stderr or "") or "No module named 'pytest'" in (result.stderr or ""):
+            status = "error"
+            evidence = "Test runner environment/tooling failure: pytest is not installed for the current interpreter."
+        elif result.returncode == 0:
             status = "passed"
             evidence = f"Tests passed (exit code 0)."
         else:
@@ -257,4 +271,184 @@ def run_tests(config: TargetProjectConfig) -> dict:
             "stderr": f"Execution error: {exc}",
             "timeout": config.test_timeout,
             "evidence": f"Failed to execute tests: {exc}",
+        }
+
+
+MODULE_NAME_PATTERN: Final[re.Pattern] = re.compile(
+    r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]*)*$"
+)
+
+
+def _extract_module_from_error(error: str) -> str:
+    """Extract a module name from a ModuleNotFoundError-style message.
+
+    Returns an empty string when no module name can be reliably extracted.
+    """
+    match = re.search(r"No module named ['\"]([^'\"]+)['\"]", error)
+    if match:
+        return match.group(1)
+    match = re.search(r"import\s+([a-zA-Z_][a-zA-Z0-9_]*)", error)
+    if match:
+        return match.group(1)
+    return ""
+
+
+def check_dependency(config: TargetProjectConfig, module_name: str) -> dict:
+    """Check whether a Python module is importable using the current interpreter.
+
+    This diagnostic is read-only: it does not install packages, modify files,
+    or execute arbitrary commands. It runs ``sys.executable -c "import <module>"``
+    in a subprocess with an argument list, ``shell=False``, a timeout, and
+    bounded output.
+
+    If the module name is invalid or the interpreter cannot be determined,
+    the limitation is reported explicitly as an insufficient_context result.
+    """
+    root = config.root
+    interpreter = sys.executable
+    cmd = [interpreter, "-c", f"import {module_name}"]
+
+    # Validate the module name before execution.
+    if not module_name or not MODULE_NAME_PATTERN.match(module_name):
+        return {
+            "action": "check_dependency",
+            "project_path": str(root),
+            "module": module_name,
+            "command": cmd,
+            "interpreter": interpreter,
+            "exit_code": None,
+            "status": "insufficient_context",
+            "stdout": "",
+            "stderr": (
+                f"Cannot check dependency: module name {module_name!r} is "
+                "invalid or missing."
+            ),
+            "timeout": config.test_timeout,
+            "evidence": (
+                f"Insufficient context: module name {module_name!r} is invalid "
+                "or missing. Cannot check dependency availability using "
+                f"interpreter {interpreter}."
+            ),
+        }
+
+    # Confirm the interpreter path exists before attempting to run it.
+    interpreter_path = Path(interpreter)
+    if not interpreter_path.exists():
+        return {
+            "action": "check_dependency",
+            "project_path": str(root),
+            "module": module_name,
+            "command": cmd,
+            "interpreter": interpreter,
+            "exit_code": None,
+            "status": "error",
+            "stdout": "",
+            "stderr": f"Python interpreter not found: {interpreter}",
+            "timeout": config.test_timeout,
+            "evidence": (
+                f"Cannot determine the current Python interpreter ({interpreter}); "
+                "dependency availability could not be checked."
+            ),
+        }
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=config.test_timeout,
+            env=_filter_environment(),
+            shell=False,
+        )
+
+        stdout = result.stdout[: config.max_test_output]
+        stderr = result.stderr[: config.max_test_output]
+
+        # Redact secrets from output
+        stdout = _redact_dict(stdout)
+        stderr = _redact_dict(stderr)
+
+        if result.returncode == 0:
+            status = "installed"
+            evidence = (
+                f"Module '{module_name}' is importable using interpreter "
+                f"{interpreter}."
+            )
+        else:
+            stderr_lower = (stderr or "").lower()
+            if "modulenotfounderror" in stderr_lower or "importerror" in stderr_lower:
+                status = "missing"
+                evidence = (
+                    f"Module '{module_name}' is not importable using interpreter "
+                    f"{interpreter}."
+                )
+            else:
+                status = "error"
+                evidence = (
+                    f"Module check failed for '{module_name}' "
+                    f"with exit code {result.returncode}."
+                )
+
+        return {
+            "action": "check_dependency",
+            "project_path": str(root),
+            "module": module_name,
+            "command": cmd,
+            "interpreter": interpreter,
+            "exit_code": result.returncode,
+            "status": status,
+            "stdout": stdout,
+            "stderr": stderr,
+            "timeout": config.test_timeout,
+            "evidence": evidence,
+        }
+
+    except subprocess.TimeoutExpired:
+        return {
+            "action": "check_dependency",
+            "project_path": str(root),
+            "module": module_name,
+            "command": cmd,
+            "interpreter": interpreter,
+            "exit_code": None,
+            "status": "timeout",
+            "stdout": "",
+            "stderr": f"Module check timed out after {config.test_timeout} seconds.",
+            "timeout": config.test_timeout,
+            "evidence": (
+                f"Module check for '{module_name}' timed out "
+                f"after {config.test_timeout} seconds using interpreter "
+                f"{interpreter}."
+            ),
+        }
+
+    except FileNotFoundError:
+        return {
+            "action": "check_dependency",
+            "project_path": str(root),
+            "module": module_name,
+            "command": cmd,
+            "interpreter": interpreter,
+            "exit_code": None,
+            "status": "error",
+            "stdout": "",
+            "stderr": f"Python interpreter not found: {cmd[0]}.",
+            "timeout": config.test_timeout,
+            "evidence": f"Python interpreter not found: {cmd[0]}.",
+        }
+
+    except OSError as exc:
+        return {
+            "action": "check_dependency",
+            "project_path": str(root),
+            "module": module_name,
+            "command": cmd,
+            "interpreter": interpreter,
+            "exit_code": None,
+            "status": "error",
+            "stdout": "",
+            "stderr": f"Execution error: {exc}",
+            "timeout": config.test_timeout,
+            "evidence": f"Failed to check module '{module_name}': {exc}",
         }

@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from typing import Final
 
 EXCLUDED_DIRS: Final[set[str]] = {
@@ -46,7 +47,7 @@ DEFAULT_MAX_FILES: Final[int] = 10
 DEFAULT_MAX_CHARS_PER_FILE: Final[int] = 4000
 DEFAULT_MAX_DEP_CHARS: Final[int] = 12000
 
-DEFAULT_TEST_COMMAND: Final[list[str]] = ["python", "-m", "pytest", "-v", "--tb=short"]
+DEFAULT_TEST_COMMAND: Final[list[str]] = [sys.executable, "-m", "pytest", "-v", "--tb=short"]
 DEFAULT_TEST_TIMEOUT: Final[int] = 60
 DEFAULT_MAX_TEST_OUTPUT: Final[int] = 8000
 
@@ -125,7 +126,7 @@ def create_config_from_args(args: list[str] | None = None) -> TargetProjectConfi
     parser.add_argument(
         "--test-command",
         type=str,
-        default=" ".join(DEFAULT_TEST_COMMAND),
+        default=None,
         help=f"Test command to run (default: {' '.join(DEFAULT_TEST_COMMAND)})",
     )
     parser.add_argument(
@@ -143,8 +144,11 @@ def create_config_from_args(args: list[str] | None = None) -> TargetProjectConfi
 
     parsed = parser.parse_args(args)
 
-    # Parse test command string into list
-    test_cmd = shlex.split(parsed.test_command) if parsed.test_command else DEFAULT_TEST_COMMAND
+    # Parse test command string into list without breaking paths containing spaces.
+    if parsed.test_command is None:
+        test_cmd = list(DEFAULT_TEST_COMMAND)
+    else:
+        test_cmd = shlex.split(parsed.test_command) if parsed.test_command else list(DEFAULT_TEST_COMMAND)
 
     return TargetProjectConfig(
         project_path=parsed.project_path,

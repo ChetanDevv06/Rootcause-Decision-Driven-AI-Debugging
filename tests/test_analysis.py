@@ -255,6 +255,132 @@ def test_report_claims_only_recorded_actions():
     assert "inspect_network" not in prompt  # Not in history
 
 
+def test_build_analysis_prompt_includes_truncation_notice():
+    """Test that truncation notice is included in the analysis prompt."""
+    truncated_investigation = dict(SAMPLE_INVESTIGATION)
+    truncated_investigation["truncation_notice"] = (
+        "Investigation was truncated after 3 step(s). "
+        "Not all diagnostic actions could be executed."
+    )
+    truncated_investigation["stop_reason"] = "maximum_steps_reached"
+
+    prompt = _build_analysis_prompt(truncated_investigation)
+
+    assert "TRUNCATION" in prompt
+    assert "truncated" in prompt.lower()
+
+
+def test_build_analysis_prompt_distinguishes_confirmed_from_hypothesis():
+    """Test that prompt rules distinguish confirmed observations from hypotheses."""
+    prompt = _build_analysis_prompt(SAMPLE_INVESTIGATION)
+
+    assert "Confirmed vs hypothesis" in prompt
+    assert "alternative_explanations" in prompt
+    assert "remaining_uncertainty" in prompt
+
+
+def test_build_analysis_prompt_test_results_interpretation():
+    """Test that prompt rules interpret passing tests as reproduction confirmation."""
+    prompt = _build_analysis_prompt(SAMPLE_INVESTIGATION)
+
+    assert "expected failure was reproduced" in prompt
+    assert "NOT as evidence that the application works" in prompt
+
+
+def test_build_analysis_prompt_runtime_uncertainty():
+    """Test that prompt rules keep runtime uncertainty explicit."""
+    prompt = _build_analysis_prompt(SAMPLE_INVESTIGATION)
+
+    assert "runtime environment was not verified" in prompt
+    assert "remaining uncertainty" in prompt.lower()
+
+
+def test_report_without_check_dependency_has_uncertainty():
+    """Test that evidence_sufficient is false when check_dependency hasn't verified runtime."""
+    from src.analysis import RootCauseReport
+
+    # No check_dependency was run - runtime not verified
+    report = RootCauseReport(
+        confirmed_observations=["requirements.txt declares psycopg"],
+        most_likely_cause="Insufficient evidence to determine root cause",
+        alternative_explanations=["Missing psycopg in runtime environment"],
+        evidence_supporting={},
+        remaining_uncertainty=[
+            "Runtime environment not verified: check_dependency not executed",
+            "Interpreter used for checking not confirmed",
+        ],
+        recommended_next_step="Run check_dependency for psycopg",
+        suggested_fix=None,
+        evidence_sufficient=False,
+    )
+
+    assert report.evidence_sufficient is False
+    assert report.most_likely_cause == "Insufficient evidence to determine root cause"
+    assert len(report.remaining_uncertainty) >= 2
+    assert report.suggested_fix is None
+
+
+def test_report_with_confirmed_missing_module():
+    """Test report when check_dependency confirms module is missing."""
+    from src.analysis import RootCauseReport
+
+    report = RootCauseReport(
+        confirmed_observations=[
+            "requirements.txt declares psycopg[binary]>=3.2",
+            "app.py imports psycopg at module level",
+            "check_dependency: psycopg is not importable using interpreter /path/to/python",
+        ],
+        most_likely_cause="Missing dependency: psycopg not installed in runtime environment",
+        alternative_explanations=["Wrong Python interpreter being used"],
+        evidence_supporting={
+            "Missing dependency": [
+                "requirements.txt declares psycopg[binary]>=3.2",
+                "check_dependency reports psycopg as missing",
+            ]
+        },
+        remaining_uncertainty=[
+            "Whether installing psycopg resolves the issue without other missing dependencies",
+        ],
+        recommended_next_step="Install dependencies with pip install -r requirements.txt",
+        suggested_fix="pip install -r requirements.txt",
+        evidence_sufficient=True,
+    )
+
+    assert report.evidence_sufficient is True
+    assert "psycopg" in report.most_likely_cause.lower()
+    assert report.suggested_fix == "pip install -r requirements.txt"
+
+
+def test_report_passing_tests_not_app_health():
+    """Test that passing tests are not treated as evidence the app works."""
+    from src.analysis import RootCauseReport
+
+    report = RootCauseReport(
+        confirmed_observations=[
+            "run_tests passed (exit code 0)",
+            "tests assert that psycopg import fails",
+        ],
+        most_likely_cause="Missing dependency: psycopg not installed",
+        alternative_explanations=["Test environment differs from production"],
+        evidence_supporting={
+            "Missing dependency": [
+                "requirements.txt declares psycopg",
+                "tests confirm import failure",
+            ]
+        },
+        remaining_uncertainty=[
+            "Passing tests reproduce the expected failure — app health not verified",
+        ],
+        recommended_next_step="Run check_dependency for psycopg",
+        suggested_fix=None,
+        evidence_sufficient=False,
+    )
+
+    assert report.evidence_sufficient is False
+    assert "app health not verified" in str(report.remaining_uncertainty)
+    assert report.suggested_fix is None
+
+
 if __name__ == "__main__":
     import pytest
     pytest.main([__file__, "-v"])

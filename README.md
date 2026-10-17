@@ -44,7 +44,7 @@ Flow: reported error -> available actions registry -> Decider choose_next_action
 - Tests run arbitrary project code; only trusted projects.
 - No dependency installation or fixes applied automatically.
 - Network required for live demo (AWS/Decider).
-- No license file present; add before public release.
+- Licensed under MIT; see LICENSE file.
 
 ## Troubleshooting
 - Decider connection errors: ensure server running on port 8099.
