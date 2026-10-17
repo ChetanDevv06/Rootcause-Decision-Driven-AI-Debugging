@@ -1,65 +1,34 @@
-
 from pathlib import Path
 from typing import Any
 
-from src.decider_client import choose_next_action
-from src.diagnostics import inspect_dependencies
+from src.config import TargetProjectConfig, create_config_from_args
+from src.decider_client import (
+    choose_next_action,
+    DeciderError,
+    DeciderConnectionError,
+    DeciderTimeoutError,
+    DeciderHTTPError,
+    DeciderInvalidResponseError,
+    DeciderValidationError,
+)
+from src.diagnostics import inspect_dependencies, inspect_source, run_tests
+from src.analysis import analyze_root_cause
 
 
 MAX_STEPS = 3
-
-EXCLUDED_DIRS = {
-    ".git",
-    ".venv",
-    ".venv314",
-    "__pycache__",
-    "node_modules",
-}
+MAX_STEPS_LIMIT = 10  # Hard upper bound
 
 
-def inspect_source(project_path: str) -> dict[str, Any]:
-    """Read a limited number of Python files as diagnostic evidence."""
-    root = Path(project_path).resolve()
-
-    if not root.is_dir():
-        return {
-            "action": "inspect_source",
-            "error": "Project path is not a directory.",
-        }
-
-    files: dict[str, str] = {}
-
-    for path in root.rglob("*.py"):
-        if any(part in EXCLUDED_DIRS for part in path.parts):
-            continue
-
-        try:
-            relative = str(path.relative_to(root))
-            files[relative] = path.read_text(
-                encoding="utf-8",
-                errors="replace",
-            )[:4000]
-        except OSError:
-            continue
-
-        if len(files) >= 10:
-            break
-
-    return {
-        "action": "inspect_source",
-        "project_path": str(root),
-        "files_found": files,
-        "evidence": f"Read {len(files)} Python source files.",
-    }
-
-
-def execute_action(action: str, project_path: str) -> dict[str, Any]:
+def execute_action(action: str, config: TargetProjectConfig) -> dict[str, Any]:
     """Execute only a recognized diagnostic action."""
     if action == "inspect_dependencies":
-        return inspect_dependencies(project_path)
+        return inspect_dependencies(config)
 
     if action == "inspect_source":
-        return inspect_source(project_path)
+        return inspect_source(config)
+
+    if action == "run_tests":
+        return run_tests(config)
 
     if action == "stop_and_report":
         return {
@@ -79,7 +48,7 @@ def summarize_result(result: dict[str, Any]) -> str:
 
 
 def investigate(
-    project_path: str,
+    config: TargetProjectConfig,
     error: str,
     evidence: list[str] | None = None,
     max_steps: int = MAX_STEPS,
@@ -87,11 +56,8 @@ def investigate(
     """Run a bounded, evidence-driven diagnostic investigation."""
     if max_steps < 1:
         raise ValueError("max_steps must be at least 1.")
-
-    root = Path(project_path).resolve()
-
-    if not root.is_dir():
-        raise ValueError(f"Project path is not a directory: {root}")
+    if max_steps > MAX_STEPS_LIMIT:
+        raise ValueError(f"max_steps cannot exceed {MAX_STEPS_LIMIT}")
 
     evidence_history = list(evidence or [])
     executed_actions: list[str] = []
@@ -106,6 +72,11 @@ def investigate(
             "Inspect Python source files for imports or code "
             "relevant to the reported error."
         ),
+        "run_tests": (
+            "Execute the project's test suite to gather runtime evidence. "
+            "Runs a predefined test command (default: pytest) with timeout "
+            "and output limits. Does not install dependencies or modify files."
+        ),
         "stop_and_report": (
             "Stop collecting evidence and report what is currently known."
         ),
@@ -119,11 +90,27 @@ def investigate(
             if name == "stop_and_report" or name not in executed_actions
         }
 
-        decision = choose_next_action(
-            error=error,
-            evidence=evidence_history,
-            available_actions=available_actions,
-        )
+        try:
+            decision = choose_next_action(
+                error=error,
+                evidence=evidence_history,
+                available_actions=available_actions,
+            )
+        except (DeciderConnectionError, DeciderTimeoutError, DeciderHTTPError,
+                DeciderInvalidResponseError, DeciderValidationError) as exc:
+            # Record the Decider error in history and stop gracefully
+            history.append({
+                "step": step,
+                "decision_error": {
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                },
+                "result": {
+                    "action": "decider_error",
+                    "evidence": f"Decider error: {exc}",
+                },
+            })
+            break
 
         selected = decision["action"]
 
@@ -138,7 +125,7 @@ def investigate(
             })
             break
 
-        result = execute_action(selected, str(root))
+        result = execute_action(selected, config)
         executed_actions.append(selected)
 
         history.append({
@@ -162,8 +149,8 @@ def investigate(
             # All available evidence-gathering actions have run.
             break
 
-    return {
-        "project_path": str(root),
+    investigation = {
+        "project_path": str(config.root),
         "reported_error": error,
         "steps_completed": len(history),
         "actions_executed": executed_actions,
@@ -176,20 +163,65 @@ def investigate(
         ),
     }
 
+    # Generate final root-cause analysis using Bedrock
+    analysis = analyze_root_cause(investigation)
+    investigation["analysis"] = analysis
 
-if __name__ == "__main__":
-    project_root = Path(__file__).resolve().parent.parent
+    return investigation
+
+
+def main(args: list[str] | None = None) -> None:
+    """CLI entry point for Rootcause investigation."""
+    import json
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Rootcause - Decision-first AI debugging agent",
+        add_help=True,
+    )
+    # Add max_steps argument
+    parser.add_argument(
+        "--max-steps",
+        type=int,
+        default=MAX_STEPS,
+        help=f"Maximum decision cycles (default: {MAX_STEPS}, max: {MAX_STEPS_LIMIT})",
+    )
+    # Parse only known args to allow passing through to config parser
+    parsed, remaining = parser.parse_known_args(args)
+
+    if parsed.max_steps < 1 or parsed.max_steps > MAX_STEPS_LIMIT:
+        parser.error(f"max-steps must be between 1 and {MAX_STEPS_LIMIT}")
+
+    config = create_config_from_args(remaining)
+
+    # Default error and evidence for demonstration
+    # In practice, these would come from CLI args or a config file
+    error = "ModuleNotFoundError: No module named 'psycopg'"
+    initial_evidence = [
+        "The application reports a missing psycopg module.",
+        "The dependency manifest has not yet been inspected.",
+    ]
 
     result = investigate(
-        project_path=str(project_root),
-        error="ModuleNotFoundError: No module named 'psycopg'",
-        evidence=[
-            "The application reports a missing psycopg module.",
-            "The dependency manifest has not yet been inspected.",
-        ],
+        config=config,
+        error=error,
+        evidence=initial_evidence,
+        max_steps=parsed.max_steps,
     )
 
-    import json
-
     print("\n=== Rootcause investigation ===")
-    print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+    # Print investigation without analysis first (it's large)
+    investigation_summary = {k: v for k, v in result.items() if k != "analysis"}
+    print(json.dumps(investigation_summary, indent=2, ensure_ascii=True, default=str))
+
+    # Print analysis separately
+    analysis = result.get("analysis", {})
+    print("\n=== Root-cause analysis ===")
+    if analysis.get("analysis_status") == "success":
+        print(json.dumps(analysis["analysis"], indent=2, ensure_ascii=True))
+    else:
+        print(json.dumps(analysis, indent=2, ensure_ascii=True, default=str))
+
+
+if __name__ == "__main__":
+    main()
