@@ -15,12 +15,11 @@ import importlib
 from pathlib import Path
 import sys
 import time
-from typing import Any
+from typing import Any, Final
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Final, Any
 
 from src.config import TargetProjectConfig
 from src.orchestrator import investigate, MAX_STEPS_LIMIT
