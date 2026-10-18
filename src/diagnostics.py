@@ -306,7 +306,8 @@ def check_dependency(config: TargetProjectConfig, module_name: str) -> dict:
     """
     root = config.root
     interpreter = sys.executable
-    cmd = [interpreter, "-c", f"import {module_name}"]
+    import_check_code = "import importlib,sys; importlib.import_module(sys.argv[1])"
+    cmd = [interpreter, "-c", import_check_code, module_name]
 
     # Validate the module name before execution.
     if not module_name or not MODULE_NAME_PATTERN.match(module_name):
