@@ -72,3 +72,13 @@ hf_cache/
 # Build and generated output
 outputs/
 artifacts/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.local
+
+# Backend
+src/__pycache__/
+*.egg-info/
