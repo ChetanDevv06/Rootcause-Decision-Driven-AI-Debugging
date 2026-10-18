@@ -345,6 +345,7 @@ function WorkspaceScreen({
   ];
   const [pathPlaceholder, setPathPlaceholder] = useState(PATH_PLACEHOLDERS[0]);
   const [errorPlaceholder, setErrorPlaceholder] = useState(ERROR_PLACEHOLDERS[0]);
+  const [flash, setFlash] = useState(false);
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
@@ -370,6 +371,7 @@ function WorkspaceScreen({
       ei = (ei + 1) % ERROR_PLACEHOLDERS.length;
       setPathPlaceholder(PATH_PLACEHOLDERS[pi]);
       setErrorPlaceholder(ERROR_PLACEHOLDERS[ei]);
+      setFlash((f) => !f);
     }, 4000);
     return () => {
       if (placeholderTimer.current) clearInterval(placeholderTimer.current);
@@ -422,7 +424,7 @@ function WorkspaceScreen({
             <div className="input-wrap">
               <input
                 id="project-path-input"
-                className="form-input"
+                className={`form-input ${flash ? "form-input--flash" : ""}`}
                 type="text"
                 placeholder={pathPlaceholder}
                 value={projectPath}
@@ -465,7 +467,7 @@ function WorkspaceScreen({
               <textarea
                 id="error-traceback-input"
                 ref={textareaRef}
-                className="form-textarea"
+                className={`form-textarea ${flash ? "form-textarea--flash" : ""}`}
                 placeholder={errorPlaceholder}
                 value={errorText}
                 onChange={handleTextareaChange}
