@@ -188,8 +188,8 @@ function TopNav({
             {allOk
               ? "Engine Ready"
               : isUnhealthy
-              ? "API Unhealthy"
-              : "Checking..."}
+                ? "API Unhealthy"
+                : "Checking..."}
           </span>
 
           {/* Hover dropdown */}
@@ -311,7 +311,7 @@ function Sidebar({
       <div className="sidebar-footer">
         <span>Decider {deciderVersion}</span>
         <span className={`sidebar-footer-status ${health?.decider_reachable ? "" : "status-dropdown-value--warn"}`}
-              style={{ color: health?.decider_reachable ? "var(--color-primary)" : "var(--color-warning)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+          style={{ color: health?.decider_reachable ? "var(--color-primary)" : "var(--color-warning)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
           {health?.decider_reachable ? "Online" : health === null ? "—" : "Offline"}
         </span>
       </div>
@@ -1039,11 +1039,15 @@ function ResultsScreen({
           </span>
         </div>
         <h1 className="results-h1">
-          {analysisOk && mostLikelyCause
-            ? "Investigation complete"
+          {!analysisOk
+            ? "Analysis unavailable"
             : isMaxSteps
-            ? "Investigation reached step limit"
-            : "Investigation complete — review findings"}
+              ? "Investigation reached step limit"
+              : evidenceSufficient === false
+                ? "Investigation complete — more evidence needed"
+                : mostLikelyCause
+                  ? "Likely cause identified"
+                  : "Investigation complete — review findings"}
         </h1>
         <p className="results-desc">
           {result.steps_completed} diagnostic step{result.steps_completed !== 1 ? "s" : ""} executed on{" "}
@@ -1076,8 +1080,8 @@ function ResultsScreen({
             {evidenceSufficient === true
               ? "Evidence: Sufficient"
               : evidenceSufficient === false
-              ? "Evidence: Insufficient"
-              : stopReason.replace(/_/g, " ")}
+                ? "Evidence: Insufficient"
+                : stopReason.replace(/_/g, " ")}
           </div>
         </div>
 
@@ -1093,9 +1097,13 @@ function ResultsScreen({
           <div>
             <div className="scope-callout-title">Diagnostic Scope</div>
             <p className="scope-callout-desc">
-              {analysisOk
-                ? "The diagnostic engine ran against your project directory. All findings below are based on actual workspace evidence, not speculation."
-                : "The analysis step could not complete. Diagnostic steps ran against your project directory, but the Bedrock analysis phase was unavailable."}
+              {!analysisOk
+                ? "Diagnostic steps were recorded, but the analysis phase did not complete. Treat the findings as preliminary until the analysis can be rerun."
+                : evidenceSufficient === false
+                  ? "The analysis completed, but the available evidence is insufficient to establish a root cause confidently. Review the observations and remaining uncertainties before applying a fix."
+                  : evidenceSufficient === true
+                    ? "The analysis considers the evidence collected during the investigation sufficient to support its conclusion. Review the observations and recommended fix before making changes."
+                    : "The analysis completed using the available diagnostic findings. Review the observations and remaining uncertainties to assess how strongly they support the proposed cause."}
             </p>
           </div>
         </div>
@@ -1159,8 +1167,8 @@ function ResultsScreen({
                         color: isOk
                           ? "var(--color-success)"
                           : isError
-                          ? "var(--color-error)"
-                          : "var(--color-info)",
+                            ? "var(--color-error)"
+                            : "var(--color-info)",
                         marginTop: 2,
                         flexShrink: 0,
                       }}
@@ -1288,7 +1296,11 @@ function ResultsScreen({
           {suggestedFix && (
             <div className="ignore-preview" style={{ marginTop: 8 }}>
               <div className="ignore-preview-header">
-                <span>Suggested fix</span>
+                <span>
+                  {evidenceSufficient === false
+                    ? "Suggested fix — validate before applying"
+                    : "Suggested fix — review before applying"}
+                </span>
                 <button
                   className="copy-directive-btn"
                   type="button"
@@ -1554,8 +1566,8 @@ function App() {
         const status: "CONFIRMED" | "INCONCLUSIVE" | "FAILED" = isError
           ? "FAILED"
           : isMaxSteps && !isSufficient
-          ? "INCONCLUSIVE"
-          : "CONFIRMED";
+            ? "INCONCLUSIVE"
+            : "CONFIRMED";
 
         const newId = `inv-${Math.random().toString(36).slice(2, 7)}`;
         const cause = rawAnalysis.most_likely_cause as string | undefined;
@@ -1585,7 +1597,7 @@ function App() {
           const updated = [newIncident, ...prev];
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-          } catch {}
+          } catch { }
           return updated;
         });
         setSelectedIncident(newIncident);
@@ -1627,7 +1639,7 @@ function App() {
       setSelectedIncident(null);
       try {
         localStorage.removeItem(STORAGE_KEY);
-      } catch {}
+      } catch { }
     }
   }
 
@@ -1654,11 +1666,11 @@ function App() {
 
       {/* Main content */}
       <div className="main-layout">
-      <main className="main-content" id="main-content" tabIndex={-1}>
-        {settingsOpen && (
-          <SettingsScreen onClose={() => setSettingsOpen(false)} />
-        )}
-        {!settingsOpen && activeTab === "diagnosis" && (
+        <main className="main-content" id="main-content" tabIndex={-1}>
+          {settingsOpen && (
+            <SettingsScreen onClose={() => setSettingsOpen(false)} />
+          )}
+          {!settingsOpen && activeTab === "diagnosis" && (
             <>
               {screen === "idle" && (
                 <WorkspaceScreen
