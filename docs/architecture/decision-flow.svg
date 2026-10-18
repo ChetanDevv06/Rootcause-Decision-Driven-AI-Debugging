@@ -1,0 +1,148 @@
+<svg width="1000" height="920" viewBox="0 0 1000 920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgG2" x1="0" y1="0" x2="1000" y2="920" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#070B12"/>
+      <stop offset="100%" stop-color="#0E1422"/>
+    </linearGradient>
+
+    <pattern id="dotPattern2" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#1E293B" fill-opacity="0.7"/>
+    </pattern>
+
+    <marker id="arrCyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2DD4BF"/>
+    </marker>
+    <marker id="arrSky" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#38BDF8"/>
+    </marker>
+    <marker id="arrRed" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#EF4444"/>
+    </marker>
+    <marker id="arrAmber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#F59E0B"/>
+    </marker>
+    <marker id="arrPurple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#A855F7"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="920" rx="12" fill="url(#bgG2)"/>
+  <rect width="1000" height="920" rx="12" fill="url(#dotPattern2)"/>
+  <rect x="1" y="1" width="998" height="918" rx="11" fill="none" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Title -->
+  <text x="40" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-size="20" font-weight="700" fill="#F8FAFC">Rootcause — Decision-Driven Evidence Loop</text>
+  <text x="40" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-size="13" font-weight="400" fill="#94A3B8">Lifecycle from incident submission, Decider-driven selection, execution, evidence aggregation, to Bedrock final synthesis.</text>
+
+  <!-- Step 1: Input -->
+  <g transform="translate(360, 90)">
+    <rect width="280" height="50" rx="8" fill="#131B2A" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="140" y="24" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#F8FAFC">1. Incident Submission</text>
+    <text x="140" y="40" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#94A3B8">Target Path + Reported Error Trace</text>
+  </g>
+
+  <!-- Step 2: Loop Container -->
+  <rect x="60" y="170" width="880" height="470" rx="10" fill="#0C101A" stroke="#2DD4BF" stroke-dasharray="6 4" stroke-width="1.5"/>
+  <text x="80" y="196" font-family="sans-serif" font-size="13" font-weight="700" fill="#2DD4BF">BOUNDED DECISION LOOP (1 to max_steps, default: 3, hard limit: 10)</text>
+
+  <!-- Step 2A: Action Registry Filter -->
+  <g transform="translate(100, 220)">
+    <rect width="240" height="60" rx="8" fill="#131F2E" stroke="#2DD4BF" stroke-width="1.5"/>
+    <text x="120" y="24" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#F8FAFC">Registry &amp; Deduplication</text>
+    <text x="120" y="42" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#94A3B8">Omit executed actions;</text>
+    <text x="120" y="54" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#94A3B8">Keep stop_and_report available</text>
+  </g>
+
+  <!-- Step 2B: Decider 2B Query -->
+  <g transform="translate(420, 220)">
+    <rect width="240" height="60" rx="8" fill="#1E1B4B" stroke="#818CF8" stroke-width="1.5"/>
+    <text x="120" y="24" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#F8FAFC">Strands Decider 2B</text>
+    <text x="120" y="42" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#A5B4FC">POST /v1/systemone</text>
+    <text x="120" y="54" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">Bounded evidence (&lt;50k chars)</text>
+  </g>
+
+  <!-- Step 2C: Validation Diamond -->
+  <g transform="translate(500, 310)">
+    <polygon points="40 0, 80 30, 40 60, 0 30" fill="#1F2937" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="40" y="28" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="700" fill="#F8FAFC">Validate</text>
+    <text x="40" y="40" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#F59E0B">Choice?</text>
+  </g>
+
+  <!-- Failure branch from validation or Decider error -->
+  <g transform="translate(740, 270)">
+    <rect width="180" height="50" rx="6" fill="#2A1215" stroke="#EF4444" stroke-width="1"/>
+    <text x="90" y="22" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#FCA5A5">Decider Error / Fail Closed</text>
+    <text x="90" y="38" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#EF4444">Log error, break loop safely</text>
+  </g>
+
+  <!-- Step 2D: Stop and report branch -->
+  <g transform="translate(740, 360)">
+    <rect width="180" height="50" rx="6" fill="#1E293B" stroke="#94A3B8" stroke-width="1"/>
+    <text x="90" y="22" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#F8FAFC">stop_and_report</text>
+    <text x="90" y="38" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#94A3B8">Model satisfied; break loop</text>
+  </g>
+
+  <!-- Step 2E: Tool Execution -->
+  <g transform="translate(390, 400)">
+    <rect width="300" height="85" rx="8" fill="#132B2B" stroke="#2DD4BF" stroke-width="1.5"/>
+    <text x="150" y="24" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#F8FAFC">execute_action()</text>
+    <text x="150" y="42" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#2DD4BF">Only recognized diagnostic actions</text>
+    <text x="150" y="58" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• Path traversal block • Env secret scrub</text>
+    <text x="150" y="72" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• Timeouts (60s) • Max output buffers</text>
+  </g>
+
+  <!-- Step 2F: Evidence Recording & Summarization -->
+  <g transform="translate(390, 520)">
+    <rect width="300" height="60" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="150" y="24" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#F8FAFC">summarize_result() &amp; Append</text>
+    <text x="150" y="42" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#38BDF8">Append JSON snippet to evidence_history</text>
+    <text x="150" y="54" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#94A3B8">Feeds context directly into next cycle</text>
+  </g>
+
+  <!-- Arrows in Loop -->
+  <path d="M500 140 L500 170" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrSky)"/>
+  <path d="M340 250 L412 250" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrSky)"/>
+  <path d="M540 280 L540 302" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrSky)"/>
+  
+  <!-- From Validate to Error -->
+  <path d="M580 340 L732 295" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arrRed)"/>
+  <text x="660" y="306" font-family="sans-serif" font-size="9.5" fill="#EF4444">Unknown Action</text>
+
+  <!-- From Validate to Stop -->
+  <path d="M580 340 L732 385" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrSky)"/>
+  <text x="660" y="375" font-family="sans-serif" font-size="9.5" fill="#94A3B8">Selected Stop</text>
+
+  <!-- From Validate to Execute -->
+  <path d="M540 370 L540 392" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrCyan)"/>
+  <text x="550" y="386" font-family="sans-serif" font-size="10" fill="#2DD4BF">Valid Action</text>
+
+  <!-- From Execute to Summarize -->
+  <path d="M540 485 L540 512" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrCyan)"/>
+
+  <!-- Loop back arrow from Summarize to Decider Query -->
+  <path d="M390 550 L220 550 L220 280" stroke="#38BDF8" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrSky)"/>
+  <text x="150" y="420" font-family="sans-serif" font-size="10" font-weight="600" fill="#38BDF8">Next Decision Cycle</text>
+
+  <!-- Step 3: Synthesis Exit -->
+  <path d="M540 640 L540 672" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrAmber)"/>
+  <text x="550" y="660" font-family="sans-serif" font-size="10" fill="#F59E0B">Loop Exit (Finished or Truncated)</text>
+
+  <!-- Step 3: Bedrock Synthesis -->
+  <g transform="translate(250, 680)">
+    <rect width="500" height="90" rx="8" fill="#241B12" stroke="#F59E0B" stroke-width="2"/>
+    <text x="250" y="26" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F8FAFC">Amazon Bedrock Nova Micro Reasoning</text>
+    <text x="250" y="44" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#FBBF24">analyze_root_cause() — Bedrock Converse API</text>
+    <text x="250" y="62" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• Redacts API keys, passwords, database URLs, env tokens</text>
+    <text x="250" y="78" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• Enforces strict JSON schema: confirmed facts vs unverified hypotheses</text>
+  </g>
+
+  <!-- Step 4: Final Output -->
+  <path d="M500 770 L500 802" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrCyan)"/>
+
+  <g transform="translate(300, 810)">
+    <rect width="400" height="70" rx="8" fill="#132B2B" stroke="#2DD4BF" stroke-width="1.5"/>
+    <text x="200" y="24" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#F8FAFC">Validated Investigation Output</text>
+    <text x="200" y="42" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#2DD4BF">RootCauseReport + Step Audit Log + Evidence Map</text>
+    <text x="200" y="58" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">Honest error preservation — no hallucinations or fabricated results</text>
+  </g>
+</svg>

@@ -1,0 +1,61 @@
+<mxfile host="Electron" modified="2026-10-18T14:50:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="system-context-diagram" name="System Context">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="650" background="#0B0F17" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="boundary-local" value="LOCAL HOST / WORKSPACE BOUNDARY (Windows Developer Host)" style="swimlane;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;fillColor=#0F172A;strokeColor=#334155;fontColor=#94A3B8;startSize=26;align=left;spacingLeft=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="30" y="40" width="750" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="user-dev" value="&lt;b&gt;Developer&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Pastes error trace &amp;amp; target repo&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#475569;fontColor=#F8FAFC;" vertex="1" parent="boundary-local">
+          <mxGeometry x="30" y="60" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-react" value="&lt;b&gt;React Frontend&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2dd4bf&quot;&gt;Vite (Port 5173)&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Graph, History, Scenarios&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#13232C;strokeColor=#2DD4BF;fontColor=#F8FAFC;" vertex="1" parent="boundary-local">
+          <mxGeometry x="220" y="60" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="api-fastapi" value="&lt;b&gt;FastAPI Backend&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#10b981&quot;&gt;Uvicorn (Port 8000)&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;src/api.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#162820;strokeColor=#10B981;fontColor=#F8FAFC;" vertex="1" parent="boundary-local">
+          <mxGeometry x="450" y="60" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="core-orch" value="&lt;b&gt;Orchestrator Core&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#38bdf8&quot;&gt;src/orchestrator.py&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Bounded loops (max 10)&lt;br&gt;Action registry &amp;amp; validation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#17253D;strokeColor=#38BDF8;fontColor=#F8FAFC;" vertex="1" parent="boundary-local">
+          <mxGeometry x="450" y="200" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="decider-service" value="&lt;b&gt;Strands Decider 2B&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#818cf8&quot;&gt;Local HTTP (Port 8099)&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;POST /v1/systemone&lt;br&gt;Evidence-driven action selection&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E1B4B;strokeColor=#818CF8;fontColor=#F8FAFC;" vertex="1" parent="boundary-local">
+          <mxGeometry x="80" y="200" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="diag-engine" value="&lt;b&gt;Diagnostic Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2dd4bf&quot;&gt;src/diagnostics.py&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;• inspect_dependencies&lt;br&gt;• inspect_source&lt;br&gt;• check_dependency&lt;br&gt;• run_tests&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#132B2B;strokeColor=#2DD4BF;fontColor=#F8FAFC;align=left;spacingLeft=12;" vertex="1" parent="boundary-local">
+          <mxGeometry x="450" y="360" width="180" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="target-project" value="&lt;b&gt;Target Project Repo&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#cbd5e1&quot;&gt;examples/fixtures/*&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Local filesystem sandbox&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#18181B;strokeColor=#64748B;fontColor=#F8FAFC;" vertex="1" parent="boundary-local">
+          <mxGeometry x="160" y="380" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary-aws" value="AWS CLOUD (Bedrock API)" style="swimlane;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;fillColor=#1C1917;strokeColor=#F59E0B;fontColor=#F59E0B;startSize=26;align=left;spacingLeft=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="810" y="40" width="260" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="bedrock-nova" value="&lt;b&gt;Amazon Bedrock&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fbbf24&quot;&gt;Nova Micro v1:0&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Region: ap-southeast-2&lt;br&gt;Converse API (boto3)&lt;br&gt;Schema-enforced JSON&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292215;strokeColor=#F59E0B;fontColor=#F8FAFC;" vertex="1" parent="boundary-aws">
+          <mxGeometry x="30" y="190" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-dev-fe" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2DD4BF;strokeWidth=2;" edge="1" parent="1" source="user-dev" target="fe-react">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-fe-api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2DD4BF;strokeWidth=2;" edge="1" parent="1" source="fe-react" target="api-fastapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-api-orch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10B981;strokeWidth=2;" edge="1" parent="1" source="api-fastapi" target="core-orch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-orch-decider" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#818CF8;strokeWidth=2;" edge="1" parent="1" source="core-orch" target="decider-service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-orch-diag" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2DD4BF;strokeWidth=2;" edge="1" parent="1" source="core-orch" target="diag-engine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-diag-target" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=2;" edge="1" parent="1" source="diag-engine" target="target-project">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-orch-bedrock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F59E0B;strokeWidth=2;" edge="1" parent="1" source="core-orch" target="bedrock-nova">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

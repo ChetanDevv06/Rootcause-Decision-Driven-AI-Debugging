@@ -1,0 +1,52 @@
+<mxfile host="Electron" modified="2026-10-18T14:53:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="component-architecture" name="Component Architecture">
+    <mxGraphModel dx="1200" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="800" background="#0B0F17" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c-api" value="&lt;b&gt;src/api.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#10b981&quot;&gt;FastAPI Backend&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Routes /api/health, /api/demo-scenarios, /api/investigations&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#162820;strokeColor=#10B981;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c-demo" value="&lt;b&gt;src/demo_scenarios.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#0ea5e9&quot;&gt;Fixture Catalogue&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;10 reproducible demo failures under examples/fixtures/&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#142334;strokeColor=#0EA5E9;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c-orch" value="&lt;b&gt;src/orchestrator.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#38bdf8&quot;&gt;Diagnostic Engine Core&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;investigate(), execute_action(), summarize_result()&lt;br&gt;Action registry &amp;amp; deduplication, truncation notices&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#17253D;strokeColor=#38BDF8;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="390" y="60" width="310" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="c-decider" value="&lt;b&gt;src/decider_client.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#818cf8&quot;&gt;Decider 2B Client&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;choose_next_action(), _validate_decider_response()&lt;br&gt;Structured DeciderError taxonomy&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E1B4B;strokeColor=#818CF8;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="780" y="60" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="c-diag" value="&lt;b&gt;src/diagnostics.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2dd4bf&quot;&gt;Read-Only Tooling Layer&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;inspect_dependencies, inspect_source, check_dependency, run_tests&lt;br&gt;Environment sanitization, path bounds, timeout protection&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#132B2B;strokeColor=#2DD4BF;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="390" y="240" width="310" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="c-analysis" value="&lt;b&gt;src/analysis.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#fbbf24&quot;&gt;Amazon Bedrock Reasoning&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;analyze_root_cause(), _redact_secrets()&lt;br&gt;Model: amazon.nova-micro-v1:0 via Converse API&lt;br&gt;Structured RootCauseReport dataclass&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#292215;strokeColor=#F59E0B;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="780" y="220" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c-config" value="&lt;b&gt;src/config.py&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#94a3b8&quot;&gt;Configuration &amp;amp; Exclusions&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#64748b&quot;&gt;TargetProjectConfig, EXCLUDED_DIRS, EXCLUDED_FILES&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#18181B;strokeColor=#64748B;fontColor=#F8FAFC;" vertex="1" parent="1">
+          <mxGeometry x="40" y="340" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="c-agent" value="&lt;b&gt;src/rootcause_agent.py (Independent Prototype)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9ca3af&quot;&gt;Separate Strands Agent prototype; not imported or executed by orchestrator/API.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=6 4;fillColor=#16151B;strokeColor=#4B5563;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="390" y="420" width="670" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ce1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10B981;strokeWidth=2;" edge="1" parent="1" source="c-api" target="c-orch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0EA5E9;strokeWidth=1.5;" edge="1" parent="1" source="c-api" target="c-demo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#818CF8;strokeWidth=2;" edge="1" parent="1" source="c-orch" target="c-decider">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2DD4BF;strokeWidth=2;" edge="1" parent="1" source="c-orch" target="c-diag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F59E0B;strokeWidth=2;" edge="1" parent="1" source="c-orch" target="c-analysis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ce6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="c-diag" target="c-config">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

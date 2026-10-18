@@ -1,0 +1,171 @@
+<svg width="1120" height="780" viewBox="0 0 1120 780" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="compBg" x1="0" y1="0" x2="1120" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#080C14"/>
+      <stop offset="100%" stop-color="#0E1424"/>
+    </linearGradient>
+
+    <pattern id="gridC" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#1E293B" fill-opacity="0.6"/>
+    </pattern>
+
+    <marker id="carrCyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2DD4BF"/>
+    </marker>
+    <marker id="carrSky" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#38BDF8"/>
+    </marker>
+    <marker id="carrAmber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#F59E0B"/>
+    </marker>
+    <marker id="carrGreen" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#10B981"/>
+    </marker>
+    <marker id="carrMuted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <rect width="1120" height="780" rx="12" fill="url(#compBg)"/>
+  <rect width="1120" height="780" rx="12" fill="url(#gridC)"/>
+  <rect x="1" y="1" width="1118" height="778" rx="11" fill="none" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Title -->
+  <text x="40" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-size="20" font-weight="700" fill="#F8FAFC">Rootcause — Component Architecture &amp; Module Dependencies</text>
+  <text x="40" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-size="13" font-weight="400" fill="#94A3B8">Internal Python module structure, call relations, data flow boundaries, and separation from experimental scripts.</text>
+
+  <!-- Group 1: Presentation & API -->
+  <g transform="translate(40, 100)">
+    <rect width="320" height="170" rx="8" fill="#111B24" stroke="#10B981" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="14" font-weight="700" fill="#10B981">src/api.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#94A3B8">Web API Layer (FastAPI &amp; Uvicorn)</text>
+    <line x1="16" y1="56" x2="304" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#CBD5E1">• GET /api/health (service telemetry)</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• GET /api/demo-scenarios (catalogue)</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• POST /api/investigations (synchronous)</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#CBD5E1">• Models: InvestigationRequest/Response</text>
+    <text x="16" y="148" font-family="sans-serif" font-size="11" fill="#94A3B8">• _unwrap_analysis() graceful wrapper</text>
+  </g>
+
+  <!-- Group 2: Demo Scenario Registry -->
+  <g transform="translate(40, 310)">
+    <rect width="320" height="150" rx="8" fill="#141E28" stroke="#0EA5E9" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="14" font-weight="700" fill="#0EA5E9">src/demo_scenarios.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#94A3B8">Reproducible Fixture Catalogue</text>
+    <line x1="16" y1="56" x2="304" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#CBD5E1">• 10 curated failure fixtures under examples/</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• DemoScenario &amp; ExpectedOutcome models</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• Absolute fixture directory resolution</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#94A3B8">• Test verification without live injection</text>
+  </g>
+
+  <!-- Group 3: Orchestrator Core -->
+  <g transform="translate(420, 100)">
+    <rect width="320" height="210" rx="8" fill="#131C30" stroke="#38BDF8" stroke-width="2"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="15" font-weight="700" fill="#38BDF8">src/orchestrator.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#94A3B8">Diagnostic Engine Orchestrator</text>
+    <line x1="16" y1="56" x2="304" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#F8FAFC">investigate(config, error, evidence, max_steps)</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• Controls bounded loop budget (MAX_STEPS=3)</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• Action whitelist registry &amp; deduplication</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#CBD5E1">• execute_action() dispatcher</text>
+    <text x="16" y="148" font-family="sans-serif" font-size="11" fill="#CBD5E1">• summarize_result() evidence compression</text>
+    <text x="16" y="166" font-family="sans-serif" font-size="11" fill="#CBD5E1">• _derive_module_name() from trusted error</text>
+    <text x="16" y="184" font-family="sans-serif" font-size="11" fill="#94A3B8">• Appends truncation_notice on limit exhaustion</text>
+  </g>
+
+  <!-- Group 4: Decider Client -->
+  <g transform="translate(800, 100)">
+    <rect width="280" height="180" rx="8" fill="#1A182E" stroke="#818CF8" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="14" font-weight="700" fill="#818CF8">src/decider_client.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#94A3B8">Decider 2B HTTP Protocol Client</text>
+    <line x1="16" y1="56" x2="264" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#CBD5E1">• choose_next_action()</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• _validate_decider_response()</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• Max evidence bound (50,000 chars)</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#CBD5E1">• Structured Error Taxonomy:</text>
+    <text x="24" y="146" font-family="sans-serif" font-size="10" fill="#A5B4FC">DeciderConnectionError, DeciderTimeoutError</text>
+    <text x="24" y="160" font-family="sans-serif" font-size="10" fill="#A5B4FC">DeciderHTTPError, DeciderValidationError</text>
+  </g>
+
+  <!-- Group 5: Diagnostics Layer -->
+  <g transform="translate(420, 360)">
+    <rect width="320" height="190" rx="8" fill="#112224" stroke="#2DD4BF" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="14" font-weight="700" fill="#2DD4BF">src/diagnostics.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#94A3B8">Read-Only Diagnostic Tooling Layer</text>
+    <line x1="16" y1="56" x2="304" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#CBD5E1">• inspect_dependencies (manifests read)</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• inspect_source (bounded AST inspection)</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• check_dependency (sys.executable import)</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#CBD5E1">• run_tests (bounded pytest runner)</text>
+    <text x="16" y="148" font-family="sans-serif" font-size="11" fill="#94A3B8">• _filter_environment() drops sensitive tokens</text>
+    <text x="16" y="166" font-family="sans-serif" font-size="11" fill="#94A3B8">• _should_exclude_path() blocks hidden/env files</text>
+  </g>
+
+  <!-- Group 6: Analysis / Bedrock -->
+  <g transform="translate(800, 330)">
+    <rect width="280" height="220" rx="8" fill="#241B12" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="14" font-weight="700" fill="#F59E0B">src/analysis.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#94A3B8">Amazon Bedrock Reasoning Layer</text>
+    <line x1="16" y1="56" x2="264" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#CBD5E1">• analyze_root_cause()</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• _build_analysis_prompt()</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• _call_bedrock() (boto3 Converse API)</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#CBD5E1">• _parse_analysis_response()</text>
+    <text x="16" y="148" font-family="sans-serif" font-size="11" fill="#CBD5E1">• RootCauseReport dataclass</text>
+    <text x="16" y="166" font-family="sans-serif" font-size="11" fill="#94A3B8">• _redact_secrets() &amp; _redact_dict()</text>
+    <text x="16" y="184" font-family="sans-serif" font-size="11" fill="#94A3B8">• Bedrock Model: amazon.nova-micro-v1:0</text>
+  </g>
+
+  <!-- Group 7: Configuration -->
+  <g transform="translate(40, 500)">
+    <rect width="320" height="150" rx="8" fill="#18181F" stroke="#64748B" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="14" font-weight="700" fill="#94A3B8">src/config.py</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="11" fill="#64748B">Workspace Configuration &amp; Safety Rules</text>
+    <line x1="16" y1="56" x2="304" y2="56" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="76" font-family="sans-serif" font-size="11" fill="#CBD5E1">• TargetProjectConfig path validation</text>
+    <text x="16" y="94" font-family="sans-serif" font-size="11" fill="#CBD5E1">• EXCLUDED_DIRS (.git, .venv, __pycache__)</text>
+    <text x="16" y="112" font-family="sans-serif" font-size="11" fill="#CBD5E1">• EXCLUDED_FILES (.env, id_rsa, keys)</text>
+    <text x="16" y="130" font-family="sans-serif" font-size="11" fill="#CBD5E1">• CLI parser: create_config_from_args()</text>
+  </g>
+
+  <!-- Group 8: Standalone Experimental Agent (Separated Clearly!) -->
+  <g transform="translate(420, 600)">
+    <rect width="660" height="140" rx="8" fill="#16151B" stroke="#6B7280" stroke-dasharray="6 4" stroke-width="1.5"/>
+    <text x="16" y="28" font-family="sans-serif" font-size="13" font-weight="700" fill="#9CA3AF">src/rootcause_agent.py — STANDALONE STRANDS PROTOTYPE (Independent)</text>
+    <text x="16" y="46" font-family="sans-serif" font-size="10.5" fill="#6B7280">Separate research artifact: configures a standalone Strands Bedrock agent with an inspect tool.</text>
+    <line x1="16" y1="54" x2="644" y2="54" stroke="#1E293B" stroke-width="1"/>
+    <text x="16" y="74" font-family="sans-serif" font-size="11" fill="#D1D5DB">• NOT part of the primary API or orchestrator execution flow.</text>
+    <text x="16" y="92" font-family="sans-serif" font-size="11" fill="#D1D5DB">• Does not interact with Strands Decider 2B or the React UI.</text>
+    <text x="16" y="110" font-family="sans-serif" font-size="11" fill="#9CA3AF">• Serves as a reference implementation for Strands BedrockModel integration.</text>
+  </g>
+
+  <!-- ARROWS BETWEEN COMPONENTS -->
+  <!-- api.py -> orchestrator.py -->
+  <path d="M360 170 L412 170" stroke="#10B981" stroke-width="2" marker-end="url(#carrGreen)"/>
+  <text x="386" y="162" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#10B981">calls</text>
+
+  <!-- api.py -> demo_scenarios.py -->
+  <path d="M200 270 L200 302" stroke="#0EA5E9" stroke-width="1.5" marker-end="url(#carrSky)"/>
+  <text x="208" y="290" font-family="sans-serif" font-size="9" fill="#0EA5E9">lists</text>
+
+  <!-- orchestrator.py -> decider_client.py -->
+  <path d="M740 180 L792 180" stroke="#38BDF8" stroke-width="2" marker-end="url(#carrSky)"/>
+  <text x="766" y="172" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#38BDF8">calls</text>
+
+  <!-- orchestrator.py -> diagnostics.py -->
+  <path d="M580 310 L580 352" stroke="#2DD4BF" stroke-width="2" marker-end="url(#carrCyan)"/>
+  <text x="590" y="336" font-family="sans-serif" font-size="9" fill="#2DD4BF">executes</text>
+
+  <!-- orchestrator.py -> analysis.py -->
+  <path d="M740 250 L800 350" stroke="#F59E0B" stroke-width="2" marker-end="url(#carrAmber)"/>
+  <text x="785" y="295" font-family="sans-serif" font-size="9" fill="#F59E0B">synthesizes</text>
+
+  <!-- diagnostics.py -> config.py -->
+  <path d="M420 480 L368 530" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#carrMuted)"/>
+  <text x="390" y="500" font-family="sans-serif" font-size="9" fill="#64748B">imports</text>
+
+  <!-- diagnostics.py -> analysis.py (_redact_dict) -->
+  <path d="M740 440 L792 440" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#carrAmber)"/>
+  <text x="766" y="432" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#F59E0B">redacts</text>
+</svg>

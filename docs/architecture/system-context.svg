@@ -1,0 +1,173 @@
+<svg width="1080" height="620" viewBox="0 0 1080 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgG" x1="0" y1="0" x2="1080" y2="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#070B12"/>
+      <stop offset="100%" stop-color="#0D131F"/>
+    </linearGradient>
+
+    <pattern id="dotPattern" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#1E293B" fill-opacity="0.8"/>
+    </pattern>
+
+    <!-- Marker Arrowheads -->
+    <marker id="arrowCyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2DD4BF"/>
+    </marker>
+    <marker id="arrowSky" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#38BDF8"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#F59E0B"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#A855F7"/>
+    </marker>
+    <marker id="arrowMuted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="620" rx="12" fill="url(#bgG)"/>
+  <rect width="1080" height="620" rx="12" fill="url(#dotPattern)"/>
+  <rect x="1" y="1" width="1078" height="618" rx="11" fill="none" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Diagram Header -->
+  <text x="40" y="48" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-size="20" font-weight="700" fill="#F8FAFC">Rootcause — System Context &amp; Environment Boundaries</text>
+  <text x="40" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-size="13" font-weight="400" fill="#94A3B8">High-level interaction between user, web layers, local orchestration, decision models, local sandbox diagnostics, and AWS cloud reasoning.</text>
+
+  <!-- Legend -->
+  <g transform="translate(680, 36)">
+    <rect width="360" height="36" rx="6" fill="#131B2A" stroke="#1E293B" stroke-width="1"/>
+    <circle cx="20" cy="18" r="4" fill="#2DD4BF"/>
+    <text x="30" y="22" font-family="sans-serif" font-size="11" fill="#94A3B8">Primary Flow</text>
+    <circle cx="114" cy="18" r="4" fill="#38BDF8"/>
+    <text x="124" y="22" font-family="sans-serif" font-size="11" fill="#94A3B8">Decider 2B Loop</text>
+    <circle cx="230" cy="18" r="4" fill="#F59E0B"/>
+    <text x="240" y="22" font-family="sans-serif" font-size="11" fill="#94A3B8">Bedrock Analysis</text>
+  </g>
+
+  <!-- BOUNDARY 1: USER WORKSPACE / LOCAL ENVIRONMENT -->
+  <rect x="40" y="100" width="710" height="490" rx="10" fill="#0A0F1A" stroke="#1E293B" stroke-dasharray="6 4" stroke-width="1.5"/>
+  <text x="56" y="124" font-family="sans-serif" font-size="12" font-weight="600" fill="#64748B" letter-spacing="0.5">LOCAL HOST / WORKSPACE BOUNDARY (Windows / Developer Machine)</text>
+
+  <!-- Node: Developer -->
+  <g transform="translate(60, 150)">
+    <rect width="130" height="80" rx="8" fill="#131A26" stroke="#334155" stroke-width="1.5"/>
+    <text x="65" y="36" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F1F5F9">Developer</text>
+    <text x="65" y="56" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#94A3B8">Observes failure,</text>
+    <text x="65" y="68" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#94A3B8">pastes error/path</text>
+  </g>
+
+  <!-- Node: Frontend -->
+  <g transform="translate(250, 150)">
+    <rect width="180" height="80" rx="8" fill="#131F2E" stroke="#2DD4BF" stroke-width="1.5"/>
+    <text x="90" y="32" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F1F5F9">React Frontend</text>
+    <text x="90" y="48" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#2DD4BF">Vite + React (Port 5173)</text>
+    <text x="90" y="64" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">Graph, History, Scenarios</text>
+  </g>
+
+  <!-- Node: FastAPI Backend -->
+  <g transform="translate(490, 150)">
+    <rect width="230" height="80" rx="8" fill="#141E28" stroke="#10B981" stroke-width="1.5"/>
+    <text x="115" y="32" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F1F5F9">FastAPI Web Engine</text>
+    <text x="115" y="48" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#10B981">src/api.py (Port 8000)</text>
+    <text x="115" y="64" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">/api/investigations, /api/health</text>
+  </g>
+
+  <!-- Node: Orchestrator Core -->
+  <g transform="translate(490, 290)">
+    <rect width="230" height="100" rx="8" fill="#17192A" stroke="#38BDF8" stroke-width="2"/>
+    <text x="115" y="32" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#F8FAFC">Orchestrator Core</text>
+    <text x="115" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#38BDF8">src/orchestrator.py</text>
+    <text x="115" y="68" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">• Bounded steps (max 10, def 3)</text>
+    <text x="115" y="82" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">• Evidence history &amp; validation</text>
+  </g>
+
+  <!-- Node: Local Strands Decider 2B Service -->
+  <g transform="translate(60, 290)">
+    <rect width="200" height="100" rx="8" fill="#1A182E" stroke="#818CF8" stroke-width="1.5"/>
+    <text x="100" y="30" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F1F5F9">Strands Decider 2B</text>
+    <text x="100" y="46" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#818CF8">Local Service (Port 8099)</text>
+    <text x="100" y="64" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">POST /v1/systemone</text>
+    <text x="100" y="78" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">Selects next diagnostic action</text>
+  </g>
+
+  <!-- Node: Diagnostics Layer -->
+  <g transform="translate(490, 440)">
+    <rect width="230" height="120" rx="8" fill="#172224" stroke="#2DD4BF" stroke-width="1.5"/>
+    <text x="115" y="28" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F1F5F9">Diagnostics Engine</text>
+    <text x="115" y="44" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#2DD4BF">src/diagnostics.py</text>
+    <text x="115" y="64" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• inspect_dependencies (manifests)</text>
+    <text x="115" y="78" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• inspect_source (bounded AST)</text>
+    <text x="115" y="92" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• check_dependency (interpreter)</text>
+    <text x="115" y="106" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">• run_tests (subprocess pytest)</text>
+  </g>
+
+  <!-- Node: Target Project Workspace -->
+  <g transform="translate(190, 450)">
+    <rect width="210" height="100" rx="8" fill="#19191D" stroke="#64748B" stroke-width="1.5"/>
+    <text x="105" y="28" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#F1F5F9">Target Project</text>
+    <text x="105" y="46" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#CBD5E1">examples/fixtures/* or User Repo</text>
+    <text x="105" y="64" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">• Read-only file inspection</text>
+    <text x="105" y="78" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">• Isolated interpreter check</text>
+  </g>
+
+  <!-- BOUNDARY 2: AWS CLOUD -->
+  <rect x="790" y="100" width="250" height="490" rx="10" fill="#11121A" stroke="#F59E0B" stroke-dasharray="6 4" stroke-width="1.5"/>
+  <text x="806" y="124" font-family="sans-serif" font-size="12" font-weight="600" fill="#F59E0B" letter-spacing="0.5">AWS CLOUD (Bedrock API)</text>
+
+  <!-- Node: Bedrock Reasoning Layer -->
+  <g transform="translate(815, 270)">
+    <rect width="200" height="140" rx="8" fill="#201710" stroke="#F59E0B" stroke-width="2"/>
+    <text x="100" y="32" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#F8FAFC">Amazon Bedrock</text>
+    <text x="100" y="52" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="600" fill="#FBBF24">Nova Micro v1:0</text>
+    <text x="100" y="70" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#94A3B8">Region: ap-southeast-2</text>
+    <text x="100" y="92" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">src/analysis.py</text>
+    <text x="100" y="108" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">Converse API (boto3)</text>
+    <text x="100" y="124" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#CBD5E1">Structured RootCauseReport</text>
+  </g>
+
+  <!-- ARROWS & LABELS -->
+  <!-- Developer -> Frontend -->
+  <path d="M190 190 L242 190" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrowCyan)"/>
+
+  <!-- Frontend -> FastAPI -->
+  <path d="M430 180 L482 180" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrowCyan)"/>
+  <text x="456" y="172" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#94A3B8">POST</text>
+
+  <!-- FastAPI -> Frontend -->
+  <path d="M482 200 L438 200" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrowMuted)"/>
+  <text x="456" y="214" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#94A3B8">JSON</text>
+
+  <!-- FastAPI -> Orchestrator -->
+  <path d="M605 230 L605 282" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrowCyan)"/>
+  <text x="615" y="260" font-family="sans-serif" font-size="10" fill="#94A3B8">investigate()</text>
+
+  <!-- Orchestrator <-> Decider 2B -->
+  <!-- Request to decider -->
+  <path d="M490 330 L268 330" stroke="#38BDF8" stroke-width="2" marker-end="url(#arrowSky)"/>
+  <text x="375" y="322" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#38BDF8">choose_next_action()</text>
+  <!-- Response from decider -->
+  <path d="M260 350 L482 350" stroke="#818CF8" stroke-width="2" marker-end="url(#arrowSky)"/>
+  <text x="375" y="366" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#818CF8">selected action + probs</text>
+
+  <!-- Orchestrator -> Diagnostics -->
+  <path d="M605 390 L605 432" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrowCyan)"/>
+  <text x="615" y="415" font-family="sans-serif" font-size="10" fill="#94A3B8">execute_action()</text>
+
+  <!-- Diagnostics -> Target Project -->
+  <path d="M490 500 L408 500" stroke="#2DD4BF" stroke-width="2" marker-end="url(#arrowCyan)"/>
+  <text x="448" y="492" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#94A3B8">inspect / exec</text>
+  <!-- Target Project -> Diagnostics -->
+  <path d="M400 520 L482 520" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrowMuted)"/>
+  <text x="448" y="534" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#94A3B8">evidence</text>
+
+  <!-- Orchestrator <-> Bedrock -->
+  <!-- Call Bedrock -->
+  <path d="M720 330 L807 330" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrowAmber)"/>
+  <text x="765" y="322" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#F59E0B">analyze()</text>
+  <!-- Return report -->
+  <path d="M815 350 L728 350" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrowAmber)"/>
+  <text x="765" y="366" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#F59E0B">JSON Report</text>
+</svg>

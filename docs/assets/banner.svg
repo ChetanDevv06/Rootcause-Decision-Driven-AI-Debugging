@@ -1,0 +1,106 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#070B11"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#080C14"/>
+    </linearGradient>
+
+    <!-- Ambient Glows -->
+    <radialGradient id="cyanGlow" cx="240" cy="180" r="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#2DD4BF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueGlow" cx="960" cy="120" r="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Badge Linear Gradient -->
+    <linearGradient id="borderGrad" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="25%" stop-color="#2DD4BF" stop-opacity="0.5"/>
+      <stop offset="75%" stop-color="#38BDF8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+
+    <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="0.75" stroke-opacity="0.6"/>
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="360" rx="16" fill="url(#bgGrad)"/>
+  <rect width="1200" height="360" rx="16" fill="url(#gridPattern)"/>
+
+  <!-- Subtle Ambient Glow Orbs -->
+  <circle cx="260" cy="180" r="280" fill="url(#cyanGlow)"/>
+  <circle cx="960" cy="140" r="320" fill="url(#blueGlow)"/>
+
+  <!-- Border Outline -->
+  <rect x="1" y="1" width="1198" height="358" rx="15" fill="none" stroke="url(#borderGrad)" stroke-width="1.5"/>
+
+  <!-- Logo Mark Container -->
+  <g transform="translate(100, 110)">
+    <!-- Logo Rounded Square Outer -->
+    <rect width="140" height="140" rx="32" fill="#131A23" stroke="#1E293B" stroke-width="2"/>
+    <!-- Logo Internal Circle -->
+    <circle cx="70" cy="70" r="48" fill="#050C11" stroke="#2DD4BF" stroke-width="2.5"/>
+    <!-- Logo Chevron -->
+    <path d="M69 71L52 79V74L63.5 69V69.5L63.5 69L52 64V59L69 67V71Z" fill="#2DD4BF"/>
+    <!-- Logo Terminal Underscore Cursor -->
+    <rect x="65" y="79" width="18" height="4.5" rx="2.25" fill="#2DD4BF"/>
+  </g>
+
+  <!-- Title & Typography Block -->
+  <g transform="translate(280, 0)">
+    <!-- Pill Category Tag -->
+    <g transform="translate(0, 84)">
+      <rect width="276" height="26" rx="13" fill="#13242E" stroke="#2DD4BF" stroke-opacity="0.4" stroke-width="1"/>
+      <circle cx="14" cy="13" r="4" fill="#2DD4BF"/>
+      <text x="26" y="17.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#2DD4BF" letter-spacing="1">DECISION-DRIVEN AI DEBUGGING</text>
+    </g>
+
+    <!-- Main Title -->
+    <text x="0" y="168" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="52" font-weight="800" fill="#F8FAFC" letter-spacing="-1.5">
+      Rootcause
+    </text>
+
+    <!-- Tagline -->
+    <text x="0" y="206" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="20" font-weight="500" fill="#94A3B8" letter-spacing="-0.2">
+      Evidence-first automated diagnostics with bounded model orchestration
+    </text>
+
+    <!-- Tech Pillars (Badges row) -->
+    <g transform="translate(0, 238)">
+      <!-- Tech Badge 1: Strands Decider 2B -->
+      <g transform="translate(0, 0)">
+        <rect width="186" height="32" rx="8" fill="#131A26" stroke="#1E293B" stroke-width="1"/>
+        <circle cx="16" cy="16" r="3.5" fill="#38BDF8"/>
+        <text x="28" y="20.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#E2E8F0">Strands Decider 2B</text>
+      </g>
+
+      <!-- Tech Badge 2: Amazon Bedrock Nova Micro -->
+      <g transform="translate(196, 0)">
+        <rect width="216" height="32" rx="8" fill="#131A26" stroke="#1E293B" stroke-width="1"/>
+        <circle cx="16" cy="16" r="3.5" fill="#F59E0B"/>
+        <text x="28" y="20.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#E2E8F0">Amazon Bedrock Nova</text>
+      </g>
+
+      <!-- Tech Badge 3: FastAPI & React -->
+      <g transform="translate(422, 0)">
+        <rect width="168" height="32" rx="8" fill="#131A26" stroke="#1E293B" stroke-width="1"/>
+        <circle cx="16" cy="16" r="3.5" fill="#10B981"/>
+        <text x="28" y="20.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#E2E8F0">FastAPI + Vite React</text>
+      </g>
+
+      <!-- Tech Badge 4: Zero Speculation -->
+      <g transform="translate(600, 0)">
+        <rect width="170" height="32" rx="8" fill="#131A26" stroke="#1E293B" stroke-width="1"/>
+        <circle cx="16" cy="16" r="3.5" fill="#A855F7"/>
+        <text x="28" y="20.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#E2E8F0">Evidence-Grounded</text>
+      </g>
+    </g>
+  </g>
+</svg>

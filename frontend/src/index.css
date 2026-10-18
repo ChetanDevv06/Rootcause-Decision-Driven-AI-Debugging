@@ -140,6 +140,7 @@ body {
   flex-direction: column;
   min-height: 100%;
 }
+@media (max-width: 640px) { .stitch-limits-grid { grid-template-columns: 1fr; } }
 
 /* ─── Top Navigation Bar ────────────────────────────────── */
 .topnav {
@@ -510,6 +511,7 @@ body {
   padding-left: var(--sidebar-width);
   overflow-x: hidden;
 }
+.stitch-status-dot--green { background: var(--color-success); }
 
 .main-content {
   position: relative;
@@ -626,6 +628,9 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+.stitch-metric-label { color: var(--color-text-muted); }
+.stitch-metric-value { font-family: var(--font-mono); color: var(--color-text-primary); }
+.stitch-metric-value--green { color: var(--color-success); }
 
 .form-field-header {
   display: flex;
@@ -633,6 +638,7 @@ body {
   justify-content: space-between;
   min-height: 24px;
 }
+.stitch-benchmark-btn:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
 
 .form-label {
   display: flex;
@@ -4404,6 +4410,7 @@ details[open] .trace-accordion-arrow { transform: rotate(90deg); }
   font-size: 11px;
   color: var(--color-text-muted);
 }
+.stitch-payload-btn:hover { background: var(--color-surface-hover); }
 
 /* Rollback Safety */
 .snapshot-box {
