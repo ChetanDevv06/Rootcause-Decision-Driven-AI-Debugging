@@ -353,6 +353,7 @@ def check_dependency(config: TargetProjectConfig, module_name: str) -> dict:
         }
 
     try:
+        # codeql[py/command-line-injection] module_name is validated against MODULE_NAME_PATTERN allowlist before this call; cmd is a list with shell=False and a constant code string, so user input is never embedded in executable code.
         result = subprocess.run(
             cmd,
             cwd=root,
