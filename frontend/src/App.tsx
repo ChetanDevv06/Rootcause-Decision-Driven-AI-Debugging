@@ -476,70 +476,6 @@ function WorkspaceScreen({
             </div>
           )}
 
-          {/* Demo scenario selector */}
-          {demoScenarios.length > 0 && (
-            <div className="demo-scenario-section">
-              <div className="demo-scenario-header">
-                <h3>Try a demo scenario</h3>
-                <p className="demo-scenario-helper">
-                  Explore Rootcause with reproducible debugging examples.
-                </p>
-              </div>
-              <div className="demo-scenario-control">
-                <label className="demo-scenario-label">Scenario</label>
-                <select
-                  className="demo-scenario-select"
-                  value={selectedDemoScenario ? selectedDemoScenario.id : ""}
-                  onChange={handleDemoScenarioChange}
-                  disabled={investigating || demoScenariosLoading}
-                >
-                  <option value="">Manual input — none selected</option>
-                  {demoScenarios.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                      <span className="demo-scenario-badge">{s.category}</span>
-                    </option>
-                  ))}
-                </select>
-                {selectedDemoScenario && (
-                  <button
-                    className="btn-reset-demo"
-                    type="button"
-                    onClick={() =>
-                      handleDemoScenarioChange({
-                        target: { value: "" },
-                      } as React.ChangeEvent<HTMLSelectElement>)
-                    }
-                    disabled={investigating}
-                  >
-                    Clear selection
-                  </button>
-                )}
-              </div>
-              {selectedDemoScenario && (
-                <div className="demo-scenario-info">
-                  <div className="demo-scenario-info-body">
-                    <div className="demo-scenario-info-row">
-                      <strong>{selectedDemoScenario.name}</strong>
-                      <span className="demo-scenario-category">
-                        {selectedDemoScenario.category}
-                      </span>
-                    </div>
-                    <p className="demo-scenario-desc">
-                      {selectedDemoScenario.description}
-                    </p>
-                    {selectedDemoScenario.expected_outcome.limitations.length > 0 && (
-                      <p className="demo-scenario-limitation">
-                        <em>Note: </em>
-                        {selectedDemoScenario.expected_outcome.limitations.join(" ")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Field 1: Project Directory */}
           <div className="form-field">
             <div className="form-field-header">
@@ -574,7 +510,51 @@ function WorkspaceScreen({
                 <Icon name="folder" className="icon-16" />
                 <span>Browse</span>
               </button>
+              {demoScenarios.length > 0 && (
+                <button
+                  className={`demo-btn ${selectedDemoScenario ? "demo-btn--active" : ""}`}
+                  type="button"
+                  title={selectedDemoScenario ? `Clear demo scenario: ${selectedDemoScenario.name}` : "Load a reproducible demo scenario"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!selectedDemoScenario) {
+                      const first = demoScenarios[0];
+                      if (first) {
+                        onSelectDemoScenario(first);
+                        setProjectPath(first.project_path);
+                        setErrorText(first.error);
+                        setCharCount({ chars: first.error.length, lines: first.error.split("\n").length });
+                        textareaRef.current?.focus();
+                      }
+                    } else {
+                      handleDemoScenarioChange({ target: { value: "" } } as React.ChangeEvent<HTMLSelectElement>);
+                    }
+                  }}
+                  disabled={investigating || demoScenariosLoading}
+                >
+                  {selectedDemoScenario ? "Change demo" : "Demo scenario"}
+                </button>
+              )}
+              {demoScenarios.length > 0 && (
+                <select
+                  className="demo-select"
+                  value={selectedDemoScenario ? selectedDemoScenario.id : ""}
+                  onChange={handleDemoScenarioChange}
+                  disabled={investigating || demoScenariosLoading}
+                >
+                  <option value="">Manual input — none selected</option>
+                  {demoScenarios.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
+            {selectedDemoScenario && (
+              <p className="form-hint">
+                <Icon name="info" className="icon-16" style={{ flexShrink: 0 }} />
+                Loaded demo: <strong>{selectedDemoScenario.name}</strong> ({selectedDemoScenario.category}). Review the inputs, then investigate.
+              </p>
+            )}
           </div>
           {/* Field 2: Error input */}
           <div className="form-field">
