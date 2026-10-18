@@ -329,7 +329,7 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const placeholderTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const PATH_PLACEHOLDERS = [
     "E:\\Projects\\my-app or /home/user/my-app",
@@ -343,9 +343,17 @@ function WorkspaceScreen({
     "Paste a JavaScript/TypeScript error from console or browser DevTools.",
     "Paste a Java stack trace or exception log from your server logs.",
   ];
-  const [pathPlaceholder, setPathPlaceholder] = useState(PATH_PLACEHOLDERS[0]);
-  const [errorPlaceholder, setErrorPlaceholder] = useState(ERROR_PLACEHOLDERS[0]);
-  const [flash, setFlash] = useState(false);
+  const [displayedPath, setDisplayedPath] = useState("");
+  const [displayedError, setDisplayedError] = useState("");
+  const [pathIndex, setPathIndex] = useState(0);
+  const [errorIndex, setErrorIndex] = useState(0);
+  const [pathPhase, setPathPhase] = useState<"typing" | "holding" | "deleting" | "resting">("typing");
+  const [errorPhase, setErrorPhase] = useState<"typing" | "holding" | "deleting" | "resting">("typing");
+
+  const TYPE_SPEED = 55;
+  const DELETE_SPEED = 30;
+  const HOLD_END = 2800;
+  const REST_BETWEEN = 1200;
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
@@ -362,21 +370,65 @@ function WorkspaceScreen({
     textareaRef.current?.focus();
   }
 
-  // Cycle placeholders dynamically after a fixed timeout
+  // Typewriter effect for placeholders — types out, holds, deletes, then next
   useEffect(() => {
-    let pi = PATH_PLACEHOLDERS.indexOf(pathPlaceholder);
-    let ei = ERROR_PLACEHOLDERS.indexOf(errorPlaceholder);
-    placeholderTimer.current = setInterval(() => {
-      pi = (pi + 1) % PATH_PLACEHOLDERS.length;
-      ei = (ei + 1) % ERROR_PLACEHOLDERS.length;
-      setPathPlaceholder(PATH_PLACEHOLDERS[pi]);
-      setErrorPlaceholder(ERROR_PLACEHOLDERS[ei]);
-      setFlash((f) => !f);
-    }, 4000);
+    function tick() {
+      const pTarget = PATH_PLACEHOLDERS[pathIndex];
+      const eTarget = ERROR_PLACEHOLDERS[errorIndex];
+      let nextDelay = TYPE_SPEED;
+
+      // Path field
+      if (pathPhase === "typing") {
+        const next = pTarget.slice(0, displayedPath.length + 1);
+        setDisplayedPath(next);
+        if (next === pTarget) {
+          setPathPhase("holding");
+          nextDelay = HOLD_END;
+        }
+      } else if (pathPhase === "holding") {
+        setPathPhase("deleting");
+      } else if (pathPhase === "deleting") {
+        const next = displayedPath.slice(0, -1);
+        setDisplayedPath(next);
+        if (next === "") {
+          setPathPhase("resting");
+          setPathIndex((i) => (i + 1) % PATH_PLACEHOLDERS.length);
+          nextDelay = REST_BETWEEN;
+        }
+      } else if (pathPhase === "resting") {
+        setPathPhase("typing");
+      }
+
+      // Error field
+      if (errorPhase === "typing") {
+        const next = eTarget.slice(0, displayedError.length + 1);
+        setDisplayedError(next);
+        if (next === eTarget) {
+          setErrorPhase("holding");
+          nextDelay = Math.max(nextDelay, HOLD_END);
+        }
+      } else if (errorPhase === "holding") {
+        setErrorPhase("deleting");
+      } else if (errorPhase === "deleting") {
+        const next = displayedError.slice(0, -1);
+        setDisplayedError(next);
+        if (next === "") {
+          setErrorPhase("resting");
+          setErrorIndex((i) => (i + 1) % ERROR_PLACEHOLDERS.length);
+          nextDelay = Math.max(nextDelay, REST_BETWEEN);
+        }
+      } else if (errorPhase === "resting") {
+        setErrorPhase("typing");
+      }
+
+      typeTimer.current = setTimeout(tick, nextDelay);
+    }
+
+    typeTimer.current = setTimeout(tick, TYPE_SPEED);
     return () => {
-      if (placeholderTimer.current) clearInterval(placeholderTimer.current);
+      if (typeTimer.current) clearTimeout(typeTimer.current);
     };
-  }, [pathPlaceholder, errorPlaceholder]);
+  }, []);
 
   const isReady = healthStatus === "healthy" && !investigating;
 
@@ -424,9 +476,9 @@ function WorkspaceScreen({
             <div className="input-wrap">
               <input
                 id="project-path-input"
-                className={`form-input ${flash ? "form-input--flash" : ""}`}
+                className="form-input"
                 type="text"
-                placeholder={pathPlaceholder}
+                placeholder={displayedPath}
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 disabled={investigating}
@@ -467,8 +519,8 @@ function WorkspaceScreen({
               <textarea
                 id="error-traceback-input"
                 ref={textareaRef}
-                className={`form-textarea ${flash ? "form-textarea--flash" : ""}`}
-                placeholder={errorPlaceholder}
+                className="form-textarea"
+                placeholder={displayedError}
                 value={errorText}
                 onChange={handleTextareaChange}
                 disabled={investigating}
