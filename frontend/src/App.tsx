@@ -50,6 +50,31 @@ interface InvestigationResult {
   analysis_error?: string | null;
 }
 
+interface ExpectedOutcome {
+  scenario_id: string;
+  failure_category: string;
+  expected_evidence: string[];
+  expected_diagnosis_category: string;
+  suggested_corrective_action: string;
+  supported: boolean;
+  limitations: string[];
+}
+
+interface DemoScenario {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  fixture_dir: string;
+  project_path: string;
+  error: string;
+  expected_outcome: ExpectedOutcome;
+}
+
+interface ScenarioListResponse {
+  scenarios: DemoScenario[];
+}
+
 type AppScreen = "idle" | "investigating" | "results" | "error";
 
 interface AppState {
@@ -312,6 +337,11 @@ function WorkspaceScreen({
   submitError,
   onSubmit,
   onReset,
+  demoScenarios,
+  selectedDemoScenario,
+  onSelectDemoScenario,
+  demoScenariosLoading,
+  demoScenariosError,
 }: {
   projectPath: string;
   setProjectPath: (v: string) => void;
@@ -324,6 +354,11 @@ function WorkspaceScreen({
   submitError: string | null;
   onSubmit: (e: React.FormEvent) => void;
   onReset: () => void;
+  demoScenarios: DemoScenario[];
+  selectedDemoScenario: DemoScenario | null;
+  onSelectDemoScenario: (s: DemoScenario | null) => void;
+  demoScenariosLoading: boolean;
+  demoScenariosError: string | null;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
@@ -360,6 +395,28 @@ function WorkspaceScreen({
     setCharCount({
       chars: SAMPLE_TRACEBACK.length,
       lines: SAMPLE_TRACEBACK.split("\n").length,
+    });
+    textareaRef.current?.focus();
+  }
+
+  function handleDemoScenarioChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    if (!id) {
+      onSelectDemoScenario(null);
+      setProjectPath("");
+      setErrorText("");
+      setCharCount({ chars: 0, lines: 0 });
+      textareaRef.current?.focus();
+      return;
+    }
+    const scenario = demoScenarios.find((s) => s.id === id);
+    if (!scenario) return;
+    onSelectDemoScenario(scenario);
+    setProjectPath(scenario.project_path);
+    setErrorText(scenario.error);
+    setCharCount({
+      chars: scenario.error.length,
+      lines: scenario.error.split("\n").length,
     });
     textareaRef.current?.focus();
   }
@@ -416,6 +473,70 @@ function WorkspaceScreen({
                 <h4>Error</h4>
                 <p>{submitError}</p>
               </div>
+            </div>
+          )}
+
+          {/* Demo scenario selector */}
+          {demoScenarios.length > 0 && (
+            <div className="demo-scenario-section">
+              <div className="demo-scenario-header">
+                <h3>Try a demo scenario</h3>
+                <p className="demo-scenario-helper">
+                  Explore Rootcause with reproducible debugging examples.
+                </p>
+              </div>
+              <div className="demo-scenario-control">
+                <label className="demo-scenario-label">Scenario</label>
+                <select
+                  className="demo-scenario-select"
+                  value={selectedDemoScenario ? selectedDemoScenario.id : ""}
+                  onChange={handleDemoScenarioChange}
+                  disabled={investigating || demoScenariosLoading}
+                >
+                  <option value="">Manual input — none selected</option>
+                  {demoScenarios.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                      <span className="demo-scenario-badge">{s.category}</span>
+                    </option>
+                  ))}
+                </select>
+                {selectedDemoScenario && (
+                  <button
+                    className="btn-reset-demo"
+                    type="button"
+                    onClick={() =>
+                      handleDemoScenarioChange({
+                        target: { value: "" },
+                      } as React.ChangeEvent<HTMLSelectElement>)
+                    }
+                    disabled={investigating}
+                  >
+                    Clear selection
+                  </button>
+                )}
+              </div>
+              {selectedDemoScenario && (
+                <div className="demo-scenario-info">
+                  <div className="demo-scenario-info-body">
+                    <div className="demo-scenario-info-row">
+                      <strong>{selectedDemoScenario.name}</strong>
+                      <span className="demo-scenario-category">
+                        {selectedDemoScenario.category}
+                      </span>
+                    </div>
+                    <p className="demo-scenario-desc">
+                      {selectedDemoScenario.description}
+                    </p>
+                    {selectedDemoScenario.expected_outcome.limitations.length > 0 && (
+                      <p className="demo-scenario-limitation">
+                        <em>Note: </em>
+                        {selectedDemoScenario.expected_outcome.limitations.join(" ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1310,6 +1431,10 @@ function App() {
   const [appState, setAppState] = useState<AppState>(INITIAL_STATE);
   const [projectPath, setProjectPath] = useState("");
   const [errorText, setErrorText] = useState("");
+  const [selectedDemoScenario, setSelectedDemoScenario] = useState<DemoScenario | null>(null);
+  const [demoScenarios, setDemoScenarios] = useState<DemoScenario[]>([]);
+  const [demoScenariosLoading, setDemoScenariosLoading] = useState(true);
+  const [demoScenariosError, setDemoScenariosError] = useState<string | null>(null);
   const [maxSteps, setMaxSteps] = useState(3);
   const elapsedTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -1333,6 +1458,37 @@ function App() {
   useEffect(() => {
     checkHealth();
   }, [checkHealth]);
+
+  // Fetch demo scenarios on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        setDemoScenariosLoading(true);
+        setDemoScenariosError(null);
+        const res = await fetch(`${API_BASE}/demo-scenarios`);
+        if (!res.ok) throw new Error(`Demo scenarios HTTP ${res.status}`);
+        const data: ScenarioListResponse = await res.json();
+        if (!cancelled) setDemoScenarios(data.scenarios);
+      } catch (err) {
+        if (!cancelled)
+          setDemoScenariosError(
+            err instanceof Error ? err.message : String(err),
+          );
+      } finally {
+        if (!cancelled) setDemoScenariosLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function selectDemoScenario(scenario: DemoScenario | null) {
+    setSelectedDemoScenario(scenario);
+    setAppState((s) => ({ ...s, submitError: null }));
+  }
 
   // Elapsed time while investigating
   useEffect(() => {
@@ -1460,6 +1616,7 @@ function App() {
   function handleReset() {
     setProjectPath("");
     setErrorText("");
+    setSelectedDemoScenario(null);
     setMaxSteps(3);
     setAppState((s) => ({
       ...s,
@@ -1525,6 +1682,11 @@ function App() {
                   submitError={appState.submitError}
                   onSubmit={runInvestigation}
                   onReset={handleReset}
+                  demoScenarios={demoScenarios}
+                  selectedDemoScenario={selectedDemoScenario}
+                  onSelectDemoScenario={selectDemoScenario}
+                  demoScenariosLoading={demoScenariosLoading}
+                  demoScenariosError={demoScenariosError}
                 />
               )}
 

@@ -17,9 +17,21 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import Final, Any
 
 from src.config import TargetProjectConfig
 from src.orchestrator import investigate, MAX_STEPS_LIMIT
+from src.demo_scenarios import (
+    DemoScenario,
+    ExpectedOutcome,
+    fixture_absolute_path,
+    expected_outcomes,
+    get_scenario,
+    list_scenarios,
+)
+
+# Resolve the repository root (parent of the `src` package) for fixture paths.
+REPO_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 
 # ---------------------------------------------------------------------------
 # FastAPI app
@@ -81,6 +93,42 @@ class InvestigationResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Demo scenario models
+# ---------------------------------------------------------------------------
+
+
+class ExpectedOutcomeResponse(BaseModel):
+    """Machine-readable expected outcome for a demo scenario."""
+
+    scenario_id: str
+    failure_category: str
+    expected_evidence: list[str]
+    expected_diagnosis_category: str
+    suggested_corrective_action: str
+    supported: bool
+    limitations: list[str]
+
+
+class ScenarioResponse(BaseModel):
+    """A single demo scenario with its inputs and expected outcome."""
+
+    id: str
+    name: str
+    category: str
+    description: str
+    fixture_dir: str
+    project_path: str
+    error: str
+    expected_outcome: ExpectedOutcomeResponse
+
+
+class ScenarioListResponse(BaseModel):
+    """List of all available demo scenarios."""
+
+    scenarios: list[ScenarioResponse]
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -129,6 +177,69 @@ def health() -> dict[str, Any]:
         "decider_reachable": decider_reachable,
         "bedrock_configured": modules.get("boto3", False),
     }
+
+
+@app.get("/api/demo-scenarios", response_model=ScenarioListResponse)
+def list_demo_scenarios() -> ScenarioListResponse:
+    """Return all available demo scenarios with their inputs and fixture paths.
+
+    Each scenario includes the absolute project path (resolved from the repo
+    root) and the error text that reproduces the failure. The frontend uses
+    this to populate the investigation form without starting an investigation.
+    """
+    scenarios = []
+    for scenario in list_scenarios():
+        project_path = str(fixture_absolute_path(scenario, REPO_ROOT))
+        outcome = scenario.expected_outcome
+        scenarios.append(
+            ScenarioResponse(
+                id=scenario.id,
+                name=scenario.name,
+                category=scenario.category,
+                description=scenario.description,
+                fixture_dir=scenario.fixture_dir,
+                project_path=project_path,
+                error=scenario.error,
+                expected_outcome=ExpectedOutcomeResponse(
+                    scenario_id=outcome.scenario_id,
+                    failure_category=outcome.failure_category,
+                    expected_evidence=outcome.expected_evidence,
+                    expected_diagnosis_category=outcome.expected_diagnosis_category,
+                    suggested_corrective_action=outcome.suggested_corrective_action,
+                    supported=outcome.supported,
+                    limitations=outcome.limitations,
+                ),
+            )
+        )
+    return ScenarioListResponse(scenarios=scenarios)
+
+
+@app.get("/api/demo-scenarios/{scenario_id}", response_model=ScenarioResponse)
+def get_demo_scenario(scenario_id: str) -> ScenarioResponse:
+    """Return a single demo scenario by id."""
+    scenario = get_scenario(scenario_id)
+    if scenario is None:
+        raise HTTPException(status_code=404, detail=f"Unknown demo scenario: {scenario_id}")
+    project_path = str(fixture_absolute_path(scenario, REPO_ROOT))
+    outcome = scenario.expected_outcome
+    return ScenarioResponse(
+        id=scenario.id,
+        name=scenario.name,
+        category=scenario.category,
+        description=scenario.description,
+        fixture_dir=scenario.fixture_dir,
+        project_path=project_path,
+        error=scenario.error,
+        expected_outcome=ExpectedOutcomeResponse(
+            scenario_id=outcome.scenario_id,
+            failure_category=outcome.failure_category,
+            expected_evidence=outcome.expected_evidence,
+            expected_diagnosis_category=outcome.expected_diagnosis_category,
+            suggested_corrective_action=outcome.suggested_corrective_action,
+            supported=outcome.supported,
+            limitations=outcome.limitations,
+        ),
+    )
 
 
 @app.post("/api/investigations", response_model=InvestigationResponse)

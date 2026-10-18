@@ -1,0 +1,2 @@
+package-a>=2.0
+package-b>=1.0
