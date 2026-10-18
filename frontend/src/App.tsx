@@ -329,8 +329,7 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pathTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const PATH_PLACEHOLDERS = [
     "E:\\Projects\\my-app or /home/user/my-app",
@@ -371,75 +370,60 @@ function WorkspaceScreen({
     textareaRef.current?.focus();
   }
 
-  // Independent typewriter loop for project-directory placeholder
+  // Synchronized typewriter loop: both fields type together, wait for each other to
+  // finish typing, then both backspace together and cycle to the next message together.
   useEffect(() => {
     function tick() {
-      const target = PATH_PLACEHOLDERS[pathIndexRef.current];
-      const phase = pathPhaseRef.current;
+      const pTarget = PATH_PLACEHOLDERS[pathIndexRef.current];
+      const eTarget = ERROR_PLACEHOLDERS[errorIndexRef.current];
       let delay = TYPE_SPEED;
 
-      if (phase === "typing") {
-        pathTextRef.current = target.slice(0, pathTextRef.current.length + 1);
-        if (pathTextRef.current === target) {
+      const pp = pathPhaseRef.current;
+      const ep = errorPhaseRef.current;
+
+      if (pp === "typing") {
+        pathTextRef.current = pTarget.slice(0, pathTextRef.current.length + 1);
+        if (pathTextRef.current === pTarget) {
           pathPhaseRef.current = "holding";
-          delay = HOLD_END;
         }
-      } else if (phase === "holding") {
-        pathPhaseRef.current = "deleting";
-      } else if (phase === "deleting") {
+      } else if (pp === "holding") {
+        if (ep === "holding") {
+          pathPhaseRef.current = "deleting";
+          errorPhaseRef.current = "deleting";
+        }
+      } else if (pp === "deleting") {
         pathTextRef.current = pathTextRef.current.slice(0, -1);
         if (pathTextRef.current === "") {
           pathPhaseRef.current = "resting";
-          pathIndexRef.current = (pathIndexRef.current + 1) % PATH_PLACEHOLDERS.length;
-          delay = REST_BETWEEN;
-        }
-      } else if (phase === "resting") {
-        pathPhaseRef.current = "typing";
-      }
-
-      setRenderKey((k) => k + 1);
-      pathTimer.current = setTimeout(tick, delay);
-    }
-
-    pathTimer.current = setTimeout(tick, TYPE_SPEED);
-    return () => {
-      if (pathTimer.current) clearTimeout(pathTimer.current);
-    };
-  }, []);
-
-  // Independent typewriter loop for error-details placeholder
-  useEffect(() => {
-    function tick() {
-      const target = ERROR_PLACEHOLDERS[errorIndexRef.current];
-      const phase = errorPhaseRef.current;
-      let delay = TYPE_SPEED;
-
-      if (phase === "typing") {
-        errorTextRef.current = target.slice(0, errorTextRef.current.length + 1);
-        if (errorTextRef.current === target) {
-          errorPhaseRef.current = "holding";
-          delay = HOLD_END;
-        }
-      } else if (phase === "holding") {
-        errorPhaseRef.current = "deleting";
-      } else if (phase === "deleting") {
-        errorTextRef.current = errorTextRef.current.slice(0, -1);
-        if (errorTextRef.current === "") {
           errorPhaseRef.current = "resting";
+          pathIndexRef.current = (pathIndexRef.current + 1) % PATH_PLACEHOLDERS.length;
           errorIndexRef.current = (errorIndexRef.current + 1) % ERROR_PLACEHOLDERS.length;
           delay = REST_BETWEEN;
         }
-      } else if (phase === "resting") {
+      } else if (pp === "resting") {
+        pathPhaseRef.current = "typing";
         errorPhaseRef.current = "typing";
       }
 
+      if (ep === "typing") {
+        errorTextRef.current = eTarget.slice(0, errorTextRef.current.length + 1);
+        if (errorTextRef.current === eTarget) {
+          errorPhaseRef.current = "holding";
+        }
+      } else if (ep === "holding") {
+        if (pp === "holding") {
+          errorPhaseRef.current = "deleting";
+          pathPhaseRef.current = "deleting";
+        }
+      }
+
       setRenderKey((k) => k + 1);
-      errorTimer.current = setTimeout(tick, delay);
+      typeTimer.current = setTimeout(tick, delay);
     }
 
-    errorTimer.current = setTimeout(tick, TYPE_SPEED);
+    typeTimer.current = setTimeout(tick, TYPE_SPEED);
     return () => {
-      if (errorTimer.current) clearTimeout(errorTimer.current);
+      if (typeTimer.current) clearTimeout(typeTimer.current);
     };
   }, []);
 
