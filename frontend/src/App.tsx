@@ -343,17 +343,17 @@ function WorkspaceScreen({
     "Paste a JavaScript/TypeScript error from console or browser DevTools.",
     "Paste a Java stack trace or exception log from your server logs.",
   ];
-  const [displayedPath, setDisplayedPath] = useState("");
-  const [displayedError, setDisplayedError] = useState("");
-  const [pathIndex, setPathIndex] = useState(0);
-  const [errorIndex, setErrorIndex] = useState(0);
-  const [pathPhase, setPathPhase] = useState<"typing" | "holding" | "deleting" | "resting">("typing");
-  const [errorPhase, setErrorPhase] = useState<"typing" | "holding" | "deleting" | "resting">("typing");
+  const pathTextRef = useRef("");
+  const errorTextRef = useRef("");
+  const pathIndexRef = useRef(0);
+  const errorIndexRef = useRef(0);
+  const pathPhaseRef = useRef<"typing" | "holding" | "deleting" | "resting">("typing");
+  const errorPhaseRef = useRef<"typing" | "holding" | "deleting" | "resting">("typing");
+  const [renderKey, setRenderKey] = useState(0);
 
-  const TYPE_SPEED = 55;
-  const DELETE_SPEED = 30;
-  const HOLD_END = 2800;
-  const REST_BETWEEN = 1200;
+  const TYPE_SPEED = 45;
+  const HOLD_END = 2600;
+  const REST_BETWEEN = 1000;
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
@@ -373,54 +373,51 @@ function WorkspaceScreen({
   // Typewriter effect for placeholders — types out, holds, deletes, then next
   useEffect(() => {
     function tick() {
-      const pTarget = PATH_PLACEHOLDERS[pathIndex];
-      const eTarget = ERROR_PLACEHOLDERS[errorIndex];
+      const pTarget = PATH_PLACEHOLDERS[pathIndexRef.current];
+      const eTarget = ERROR_PLACEHOLDERS[errorIndexRef.current];
       let nextDelay = TYPE_SPEED;
 
-      // Path field
-      if (pathPhase === "typing") {
-        const next = pTarget.slice(0, displayedPath.length + 1);
-        setDisplayedPath(next);
-        if (next === pTarget) {
-          setPathPhase("holding");
+      const pp = pathPhaseRef.current;
+      if (pp === "typing") {
+        pathTextRef.current = pTarget.slice(0, pathTextRef.current.length + 1);
+        if (pathTextRef.current === pTarget) {
+          pathPhaseRef.current = "holding";
           nextDelay = HOLD_END;
         }
-      } else if (pathPhase === "holding") {
-        setPathPhase("deleting");
-      } else if (pathPhase === "deleting") {
-        const next = displayedPath.slice(0, -1);
-        setDisplayedPath(next);
-        if (next === "") {
-          setPathPhase("resting");
-          setPathIndex((i) => (i + 1) % PATH_PLACEHOLDERS.length);
+      } else if (pp === "holding") {
+        pathPhaseRef.current = "deleting";
+      } else if (pp === "deleting") {
+        pathTextRef.current = pathTextRef.current.slice(0, -1);
+        if (pathTextRef.current === "") {
+          pathPhaseRef.current = "resting";
+          pathIndexRef.current = (pathIndexRef.current + 1) % PATH_PLACEHOLDERS.length;
           nextDelay = REST_BETWEEN;
         }
-      } else if (pathPhase === "resting") {
-        setPathPhase("typing");
+      } else if (pp === "resting") {
+        pathPhaseRef.current = "typing";
       }
 
-      // Error field
-      if (errorPhase === "typing") {
-        const next = eTarget.slice(0, displayedError.length + 1);
-        setDisplayedError(next);
-        if (next === eTarget) {
-          setErrorPhase("holding");
+      const ep = errorPhaseRef.current;
+      if (ep === "typing") {
+        errorTextRef.current = eTarget.slice(0, errorTextRef.current.length + 1);
+        if (errorTextRef.current === eTarget) {
+          errorPhaseRef.current = "holding";
           nextDelay = Math.max(nextDelay, HOLD_END);
         }
-      } else if (errorPhase === "holding") {
-        setErrorPhase("deleting");
-      } else if (errorPhase === "deleting") {
-        const next = displayedError.slice(0, -1);
-        setDisplayedError(next);
-        if (next === "") {
-          setErrorPhase("resting");
-          setErrorIndex((i) => (i + 1) % ERROR_PLACEHOLDERS.length);
+      } else if (ep === "holding") {
+        errorPhaseRef.current = "deleting";
+      } else if (ep === "deleting") {
+        errorTextRef.current = errorTextRef.current.slice(0, -1);
+        if (errorTextRef.current === "") {
+          errorPhaseRef.current = "resting";
+          errorIndexRef.current = (errorIndexRef.current + 1) % ERROR_PLACEHOLDERS.length;
           nextDelay = Math.max(nextDelay, REST_BETWEEN);
         }
-      } else if (errorPhase === "resting") {
-        setErrorPhase("typing");
+      } else if (ep === "resting") {
+        errorPhaseRef.current = "typing";
       }
 
+      setRenderKey((k) => k + 1);
       typeTimer.current = setTimeout(tick, nextDelay);
     }
 
@@ -478,7 +475,8 @@ function WorkspaceScreen({
                 id="project-path-input"
                 className="form-input"
                 type="text"
-                placeholder={displayedPath}
+                key={renderKey}
+                placeholder={pathTextRef.current}
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 disabled={investigating}
@@ -520,7 +518,8 @@ function WorkspaceScreen({
                 id="error-traceback-input"
                 ref={textareaRef}
                 className="form-textarea"
-                placeholder={displayedError}
+                key={renderKey}
+                placeholder={errorTextRef.current}
                 value={errorText}
                 onChange={handleTextareaChange}
                 disabled={investigating}
