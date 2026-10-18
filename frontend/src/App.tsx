@@ -2,8 +2,24 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import "./index.css";
+import { IncidentHistoryScreen, type IncidentRecord } from "./components/IncidentHistory";
+import { EvidenceGraphScreen } from "./components/EvidenceGraph";
+import { RemediationSuiteScreen } from "./components/RemediationSuite";
 
 const API_BASE = "/api";
+const STORAGE_KEY = "rootcause_incident_history";
+
+function loadSavedIncidents(): IncidentRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export type NavigationTab = "diagnosis" | "history" | "graph" | "remediation";
 
 // ─── Types ────────────────────────────────────────────────
 interface HealthStatus {
@@ -72,9 +88,17 @@ const SAMPLE_TRACEBACK = `Traceback (most recent call last):
 ModuleNotFoundError: No module named 'psycopg'`;
 
 // ─── Icon component ───────────────────────────────────────
-function Icon({ name, className = "" }: { name: string; className?: string }) {
+function Icon({
+  name,
+  className = "",
+  style,
+}: {
+  name: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <span className={`material-symbols-outlined ${className}`} aria-hidden="true">
+    <span className={`material-symbols-outlined ${className}`} style={style} aria-hidden="true">
       {name}
     </span>
   );
@@ -102,9 +126,8 @@ function TopNav({
       {/* Brand */}
       <div className="topnav-brand">
         <div className="topnav-logo">
-          <div className="topnav-logo-mark" aria-hidden="true">RC</div>
+          <img src="/Rootcause_Logo.svg" alt="Rootcause" className="topnav-logo-mark" />
           <span className="topnav-wordmark">Rootcause</span>
-          <span className="topnav-badge">Evidence-driven debugging</span>
         </div>
       </div>
 
@@ -135,7 +158,7 @@ function TopNav({
             className={`topnav-status-label${allOk ? " topnav-status-label--healthy" : isUnhealthy ? " topnav-status-label--unhealthy" : " topnav-status-label--checking"}`}
           >
             {allOk
-              ? "All Systems Operational"
+              ? "Engine Ready"
               : isUnhealthy
               ? "API Unhealthy"
               : "Checking..."}
@@ -195,9 +218,13 @@ function TopNav({
 function Sidebar({
   projectPath,
   health,
+  activeTab,
+  onSelectTab,
 }: {
   projectPath: string;
   health: HealthStatus | null;
+  activeTab: NavigationTab;
+  onSelectTab: (tab: NavigationTab) => void;
 }) {
   const projectName = projectPath
     ? projectPath.split(/[/\\]/).filter(Boolean).pop() || projectPath
@@ -209,26 +236,42 @@ function Sidebar({
       <div className="sidebar-top">
         <span className="sidebar-section-label">Diagnostics Engine</span>
         <nav className="sidebar-nav" aria-label="Main navigation">
-          <a
-            className="sidebar-nav-item sidebar-nav-item--active"
-            href="#"
-            aria-current="page"
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === "diagnosis" ? "sidebar-nav-item--active" : ""}`}
+            onClick={() => onSelectTab("diagnosis")}
+            aria-current={activeTab === "diagnosis" ? "page" : undefined}
           >
             <Icon name="biotech" className="icon-18" />
             <span>Active Diagnosis</span>
-          </a>
-          <a className="sidebar-nav-item" href="#" aria-label="Incident History (not implemented)">
+          </button>
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === "history" ? "sidebar-nav-item--active" : ""}`}
+            onClick={() => onSelectTab("history")}
+            aria-current={activeTab === "history" ? "page" : undefined}
+          >
             <Icon name="history" className="icon-18" />
             <span>Incident History</span>
-          </a>
-          <a className="sidebar-nav-item" href="#" aria-label="Evidence Graph (not implemented)">
+          </button>
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === "graph" ? "sidebar-nav-item--active" : ""}`}
+            onClick={() => onSelectTab("graph")}
+            aria-current={activeTab === "graph" ? "page" : undefined}
+          >
             <Icon name="schema" className="icon-18" />
             <span>Evidence Graph</span>
-          </a>
-          <a className="sidebar-nav-item" href="#" aria-label="Remediation Suite (not implemented)">
+          </button>
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === "remediation" ? "sidebar-nav-item--active" : ""}`}
+            onClick={() => onSelectTab("remediation")}
+            aria-current={activeTab === "remediation" ? "page" : undefined}
+          >
             <Icon name="build_circle" className="icon-18" />
             <span>Remediation Suite</span>
-          </a>
+          </button>
         </nav>
 
         {projectPath && (
@@ -310,10 +353,6 @@ function WorkspaceScreen({
 
       {/* Hero */}
       <header className="workspace-hero">
-        <div className="hero-pill">
-          <span className="hero-pill-dot" aria-hidden="true" />
-          <span>STANDBY • REASONING ENGINE READY</span>
-        </div>
         <h1 className="hero-h1">
           Find the cause.{" "}
           <span className="gradient-text">Fix the issue.</span>
@@ -326,7 +365,7 @@ function WorkspaceScreen({
 
       {/* Form card */}
       <section className="form-card" aria-label="Investigation form">
-        <form onSubmit={onSubmit} noValidate>
+        <form className="form-body" onSubmit={onSubmit} noValidate>
           {/* Error banner */}
           {submitError && (
             <div className="form-error-banner" role="alert" style={{ marginBottom: 16 }}>
@@ -339,14 +378,15 @@ function WorkspaceScreen({
           )}
 
           {/* Field 1: Project Directory */}
-          <div className="form-field" style={{ marginBottom: 0 }}>
+          <div className="form-field">
             <div className="form-field-header">
               <label className="form-label" htmlFor="project-path-input">
                 <Icon name="folder_open" className="icon-20" style={{ color: "var(--color-primary)" }} />
-                <span>Project directory</span>
-                <span className="form-label-badge">(local path)</span>
+                <span>Project Directory</span>
+                <span className="field-tip" data-tip="Path to the local project directory accessible to the Rootcause backend.">
+                  <Icon name="info" className="icon-14" style={{ color: "var(--color-text-muted)" }} />
+                </span>
               </label>
-              <span className="form-label-os text-code-sm">OS: Win32/POSIX</span>
             </div>
             <div className="input-wrap">
               <input
@@ -372,18 +412,13 @@ function WorkspaceScreen({
                 <span>Browse</span>
               </button>
             </div>
-            <p className="form-hint">
-              <Icon name="info" className="icon-16" style={{ flexShrink: 0 }} />
-              Path to the local project directory accessible to the Rootcause backend.
-            </p>
           </div>
-
           {/* Field 2: Error input */}
-          <div className="form-field" style={{ marginTop: 24 }}>
+          <div className="form-field">
             <div className="form-field-header">
               <label className="form-label" htmlFor="error-traceback-input">
                 <Icon name="error_outline" className="icon-20" style={{ color: "var(--color-error)" }} />
-                <span>What went wrong?</span>
+                <span>Error Details</span>
               </label>
               <button
                 className="sample-btn"
@@ -400,26 +435,21 @@ function WorkspaceScreen({
                 id="error-traceback-input"
                 ref={textareaRef}
                 className="form-textarea"
-                placeholder="Paste the error message or stack trace here..."
+                placeholder="Paste Python tracebacks, exception logs, or terminal error output here (raw stdout/stderr supported)..."
                 value={errorText}
                 onChange={handleTextareaChange}
                 disabled={investigating}
                 rows={7}
                 spellCheck={false}
-                aria-describedby="textarea-hints"
               />
               <span className="textarea-counter" aria-live="polite">
                 {charCount.chars} chars • {charCount.lines} lines
               </span>
             </div>
-            <div className="form-field-footer" id="textarea-hints">
-              <span>Accepts Python tracebacks, exception logs, terminal error output.</span>
-              <span className="text-label-sm" style={{ color: "var(--color-text-muted)" }}>Raw stdout/stderr supported</span>
-            </div>
           </div>
 
           {/* Advanced settings accordion */}
-          <div className="advanced-toggle" style={{ marginTop: 8 }}>
+          <div className="advanced-toggle">
             <button
               className="advanced-toggle-btn"
               type="button"
@@ -515,7 +545,6 @@ function WorkspaceScreen({
               </button>
             </div>
             <div className="form-assurance">
-              <Icon name="verified_user" className="icon-18" style={{ color: "var(--color-success)", flexShrink: 0 }} />
               <span>
                 Diagnostics are evidence-driven. Rootcause does not automatically modify your source files without explicit confirmation.
               </span>
@@ -783,9 +812,13 @@ function InvestigatingScreen({
 function ResultsScreen({
   result,
   onReset,
+  onViewEvidenceGraph,
+  onRemediate,
 }: {
   result: InvestigationResult;
   onReset: () => void;
+  onViewEvidenceGraph?: () => void;
+  onRemediate?: () => void;
 }) {
   const [traceOpen, setTraceOpen] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -1044,6 +1077,37 @@ function ResultsScreen({
                 <Icon name="arrow_forward" className="icon-18 btn-primary-action-arrow" />
               </button>
 
+              {/* Evidence Graph & Remediation Suite links */}
+              {onViewEvidenceGraph && (
+                <button
+                  className="btn-secondary-action"
+                  type="button"
+                  onClick={onViewEvidenceGraph}
+                  aria-label="Inspect evidence graph"
+                >
+                  <div className="btn-secondary-action-left">
+                    <Icon name="schema" className="icon-20" style={{ color: "var(--color-primary)" }} />
+                    <span>Inspect Evidence Graph</span>
+                  </div>
+                  <Icon name="arrow_forward" className="icon-18" style={{ color: "var(--color-text-muted)" }} />
+                </button>
+              )}
+
+              {onRemediate && (
+                <button
+                  className="btn-secondary-action"
+                  type="button"
+                  onClick={onRemediate}
+                  aria-label="Open remediation suite"
+                >
+                  <div className="btn-secondary-action-left">
+                    <Icon name="build_circle" className="icon-20" style={{ color: "var(--color-primary)" }} />
+                    <span>Open Remediation Suite</span>
+                  </div>
+                  <Icon name="arrow_forward" className="icon-18" style={{ color: "var(--color-text-muted)" }} />
+                </button>
+              )}
+
               {/* Secondary action: copy findings */}
               <button
                 className="btn-secondary-action"
@@ -1289,11 +1353,57 @@ function App() {
           return;
         }
 
+        const investigationResult = data as InvestigationResult;
         setAppState((s) => ({
           ...s,
           screen: "results",
-          result: data as InvestigationResult,
+          result: investigationResult,
         }));
+
+        // Construct real incident from actual run
+        const rawAnalysis = (investigationResult.analysis as any) || {};
+        const isSufficient = rawAnalysis.evidence_sufficient === true || Boolean(rawAnalysis.most_likely_cause);
+        const isMaxSteps = investigationResult.stop_reason === "maximum_steps_reached";
+        const isError = Boolean(rawAnalysis._analysis_error) || investigationResult.stop_reason === "error";
+
+        const status: "CONFIRMED" | "INCONCLUSIVE" | "FAILED" = isError
+          ? "FAILED"
+          : isMaxSteps && !isSufficient
+          ? "INCONCLUSIVE"
+          : "CONFIRMED";
+
+        const newId = `inv-${Math.random().toString(36).slice(2, 7)}`;
+        const cause = rawAnalysis.most_likely_cause as string | undefined;
+        const fix = rawAnalysis.suggested_fix as string | undefined;
+
+        const firstLine = errorText.trim().split("\n")[0] || "Investigation Run";
+        const title = cause ? cause.slice(0, 80) : firstLine.slice(0, 80);
+
+        const newIncident: IncidentRecord = {
+          id: newId,
+          status,
+          model: "Strands Decider 2B",
+          timeAgo: "Just now",
+          timestamp: Date.now(),
+          steps: investigationResult.steps_completed || investigationResult.history?.length || 1,
+          duration: `${appState.elapsedSeconds || 1}s`,
+          env: projectPath.includes(".venv") ? ".venv" : "Host workspace",
+          title,
+          snippet: firstLine,
+          rootCause: cause,
+          resolution: fix ? "Fix Available" : undefined,
+          failureReason: rawAnalysis._analysis_error || (isMaxSteps ? "Maximum steps reached" : undefined),
+          rawResult: investigationResult,
+        };
+
+        setIncidents((prev) => {
+          const updated = [newIncident, ...prev];
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+        setSelectedIncident(newIncident);
       } catch (err) {
         setAppState((s) => ({
           ...s,
@@ -1302,7 +1412,7 @@ function App() {
         }));
       }
     },
-    [projectPath, errorText, maxSteps]
+    [projectPath, errorText, maxSteps, appState.elapsedSeconds]
   );
 
   function handleReset() {
@@ -1318,6 +1428,23 @@ function App() {
     }));
   }
 
+  const [activeTab, setActiveTab] = useState<NavigationTab>("diagnosis");
+  const [incidents, setIncidents] = useState<IncidentRecord[]>(loadSavedIncidents);
+  const [selectedIncident, setSelectedIncident] = useState<IncidentRecord | null>(() => {
+    const list = loadSavedIncidents();
+    return list.length > 0 ? list[0] : null;
+  });
+
+  function handleClearHistory() {
+    if (window.confirm("Are you sure you want to clear your entire investigation history?")) {
+      setIncidents([]);
+      setSelectedIncident(null);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {}
+    }
+  }
+
   const screen = appState.screen;
 
   return (
@@ -1327,41 +1454,101 @@ function App() {
         health={appState.health}
         healthStatus={appState.healthStatus}
         healthError={appState.healthError}
-        projectPath={screen !== "idle" ? projectPath : ""}
+        projectPath={activeTab === "diagnosis" && screen !== "idle" ? projectPath : activeTab !== "diagnosis" ? projectPath || "~/projects/inventory-api" : ""}
       />
 
       {/* Sidebar — always visible */}
-      <Sidebar projectPath={projectPath} health={appState.health} />
+      <Sidebar
+        projectPath={projectPath}
+        health={appState.health}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+      />
 
       {/* Main content */}
       <div className="main-layout">
         <main className="main-content" id="main-content" tabIndex={-1}>
-          {(screen === "idle") && (
-            <WorkspaceScreen
-              projectPath={projectPath}
-              setProjectPath={setProjectPath}
-              errorText={errorText}
-              setErrorText={setErrorText}
-              maxSteps={maxSteps}
-              setMaxSteps={setMaxSteps}
-              healthStatus={appState.healthStatus}
-              investigating={false}
-              submitError={appState.submitError}
-              onSubmit={runInvestigation}
-              onReset={handleReset}
+          {activeTab === "diagnosis" && (
+            <>
+              {screen === "idle" && (
+                <WorkspaceScreen
+                  projectPath={projectPath}
+                  setProjectPath={setProjectPath}
+                  errorText={errorText}
+                  setErrorText={setErrorText}
+                  maxSteps={maxSteps}
+                  setMaxSteps={setMaxSteps}
+                  healthStatus={appState.healthStatus}
+                  investigating={false}
+                  submitError={appState.submitError}
+                  onSubmit={runInvestigation}
+                  onReset={handleReset}
+                />
+              )}
+
+              {screen === "investigating" && (
+                <InvestigatingScreen
+                  projectPath={projectPath}
+                  errorText={errorText}
+                  elapsedSeconds={appState.elapsedSeconds}
+                />
+              )}
+
+              {screen === "results" && appState.result && (
+                <ResultsScreen
+                  result={appState.result}
+                  onReset={handleReset}
+                  onViewEvidenceGraph={() => setActiveTab("graph")}
+                  onRemediate={() => setActiveTab("remediation")}
+                />
+              )}
+            </>
+          )}
+
+          {activeTab === "history" && (
+            <IncidentHistoryScreen
+              incidents={incidents}
+              projectPath={projectPath || "~/projects/inventory-api"}
+              onNewInvestigation={() => {
+                setActiveTab("diagnosis");
+                handleReset();
+              }}
+              onViewEvidenceGraph={(inc) => {
+                setSelectedIncident(inc);
+                setActiveTab("graph");
+              }}
+              onRemediate={(inc) => {
+                setSelectedIncident(inc);
+                setActiveTab("remediation");
+              }}
+              onClearHistory={handleClearHistory}
             />
           )}
 
-          {screen === "investigating" && (
-            <InvestigatingScreen
-              projectPath={projectPath}
-              errorText={errorText}
-              elapsedSeconds={appState.elapsedSeconds}
+          {activeTab === "graph" && (
+            <EvidenceGraphScreen
+              incident={selectedIncident}
+              onBackToIncidents={() => setActiveTab("history")}
+              onNewInvestigation={() => {
+                setActiveTab("diagnosis");
+                handleReset();
+              }}
+              onRemediate={(inc) => {
+                setSelectedIncident(inc);
+                setActiveTab("remediation");
+              }}
             />
           )}
 
-          {screen === "results" && appState.result && (
-            <ResultsScreen result={appState.result} onReset={handleReset} />
+          {activeTab === "remediation" && (
+            <RemediationSuiteScreen
+              incident={selectedIncident}
+              onBackToIncidents={() => setActiveTab("history")}
+              onNewInvestigation={() => {
+                setActiveTab("diagnosis");
+                handleReset();
+              }}
+            />
           )}
         </main>
       </div>
