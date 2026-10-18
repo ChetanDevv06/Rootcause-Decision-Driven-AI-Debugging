@@ -5,6 +5,7 @@ import "./index.css";
 import { IncidentHistoryScreen, type IncidentRecord } from "./components/IncidentHistory";
 import { EvidenceGraphScreen } from "./components/EvidenceGraph";
 import { RemediationSuiteScreen } from "./components/RemediationSuite";
+import { SettingsScreen } from "./components/SettingsScreen";
 
 const API_BASE = "/api";
 const STORAGE_KEY = "rootcause_incident_history";
@@ -1655,56 +1656,7 @@ function App() {
       <div className="main-layout">
       <main className="main-content" id="main-content" tabIndex={-1}>
         {settingsOpen && (
-          <div className="settings-page">
-            <div className="settings-header">
-              <button className="settings-back" type="button" onClick={() => setSettingsOpen(false)} aria-label="Back to investigation">
-                <Icon name="arrow_back" className="icon-18" style={{ flexShrink: 0 }} />
-                <span>Settings</span>
-              </button>
-              <h1 className="settings-title">Settings</h1>
-            </div>
-            <div className="settings-body">
-              <nav className="settings-nav" aria-label="Settings navigation">
-                <button className="settings-nav-item settings-nav-item--active" type="button">
-                  <Icon name="tune" className="icon-18" style={{ flexShrink: 0 }} />
-                  <span>General</span>
-                </button>
-                <button className="settings-nav-item" type="button">
-                  <Icon name="notifications" className="icon-18" style={{ flexShrink: 0 }} />
-                  <span>Notifications</span>
-                </button>
-                <button className="settings-nav-item" type="button">
-                  <Icon name="security" className="icon-18" style={{ flexShrink: 0 }} />
-                  <span>Security</span>
-                </button>
-              </nav>
-              <div className="settings-content">
-                <div className="settings-section">
-                  <h2 className="settings-section-title">General</h2>
-                  <div className="setting-row setting-row--toggle">
-                    <span className="setting-label">Enable analytics</span>
-                    <button className="setting-toggle setting-toggle--on" type="button" aria-checked="true" aria-label="Enable analytics">
-                      <span className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>On</span>
-                    </button>
-                  </div>
-                  <div className="setting-row setting-row--toggle">
-                    <span className="setting-label">Crash reporting</span>
-                    <button className="setting-toggle setting-toggle--on" type="button" aria-checked="true" aria-label="Crash reporting">
-                      <span className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>On</span>
-                    </button>
-                  </div>
-                  <div className="setting-row">
-                    <span className="setting-label">Theme</span>
-                    <div className="color-picker">
-                      <button className="color-chip color-chip--selected" type="button" aria-label="System theme" />
-                      <button className="color-chip" type="button" aria-label="Dark theme" />
-                      <button className="color-chip" type="button" aria-label="Light theme" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SettingsScreen onClose={() => setSettingsOpen(false)} />
         )}
         {!settingsOpen && activeTab === "diagnosis" && (
             <>
