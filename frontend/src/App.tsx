@@ -329,7 +329,8 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const errorTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const PATH_PLACEHOLDERS = [
     "E:\\Projects\\my-app or /home/user/my-app",
@@ -343,17 +344,12 @@ function WorkspaceScreen({
     "Paste a JavaScript/TypeScript error from console or browser DevTools.",
     "Paste a Java stack trace or exception log from your server logs.",
   ];
-  const pathTextRef = useRef("");
-  const errorTextRef = useRef("");
-  const pathIndexRef = useRef(0);
-  const errorIndexRef = useRef(0);
-  const pathPhaseRef = useRef<"typing" | "holding" | "deleting" | "resting">("typing");
-  const errorPhaseRef = useRef<"typing" | "holding" | "deleting" | "resting">("typing");
-  const [renderKey, setRenderKey] = useState(0);
+  const [pathPlaceholder, setPathPlaceholder] = useState(PATH_PLACEHOLDERS[0]);
+  const [errorPlaceholder, setErrorPlaceholder] = useState(ERROR_PLACEHOLDERS[0]);
+  const [pathAnimate, setPathAnimate] = useState(false);
+  const [errorAnimate, setErrorAnimate] = useState(false);
 
-  const TYPE_SPEED = 40;
-  const HOLD_END = 2400;
-  const REST_BETWEEN = 900;
+  const CYCLE_MS = 5000;
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
@@ -370,60 +366,28 @@ function WorkspaceScreen({
     textareaRef.current?.focus();
   }
 
-  // Synchronized typewriter loop: both fields type together, wait for each other to
-  // finish typing, then both backspace together and cycle to the next message together.
+  // Independent scroll-wheel placeholder cycles — each field scrolls through its own list
   useEffect(() => {
-    function tick() {
-      const pTarget = PATH_PLACEHOLDERS[pathIndexRef.current];
-      const eTarget = ERROR_PLACEHOLDERS[errorIndexRef.current];
-      let delay = TYPE_SPEED;
-
-      const pp = pathPhaseRef.current;
-      const ep = errorPhaseRef.current;
-
-      if (pp === "typing") {
-        pathTextRef.current = pTarget.slice(0, pathTextRef.current.length + 1);
-        if (pathTextRef.current === pTarget) {
-          pathPhaseRef.current = "holding";
-        }
-      } else if (pp === "holding") {
-        if (ep === "holding") {
-          pathPhaseRef.current = "deleting";
-          errorPhaseRef.current = "deleting";
-        }
-      } else if (pp === "deleting") {
-        pathTextRef.current = pathTextRef.current.slice(0, -1);
-        if (pathTextRef.current === "") {
-          pathPhaseRef.current = "resting";
-          errorPhaseRef.current = "resting";
-          pathIndexRef.current = (pathIndexRef.current + 1) % PATH_PLACEHOLDERS.length;
-          errorIndexRef.current = (errorIndexRef.current + 1) % ERROR_PLACEHOLDERS.length;
-          delay = REST_BETWEEN;
-        }
-      } else if (pp === "resting") {
-        pathPhaseRef.current = "typing";
-        errorPhaseRef.current = "typing";
-      }
-
-      if (ep === "typing") {
-        errorTextRef.current = eTarget.slice(0, errorTextRef.current.length + 1);
-        if (errorTextRef.current === eTarget) {
-          errorPhaseRef.current = "holding";
-        }
-      } else if (ep === "holding") {
-        if (pp === "holding") {
-          errorPhaseRef.current = "deleting";
-          pathPhaseRef.current = "deleting";
-        }
-      }
-
-      setRenderKey((k) => k + 1);
-      typeTimer.current = setTimeout(tick, delay);
-    }
-
-    typeTimer.current = setTimeout(tick, TYPE_SPEED);
+    let pi = 0;
+    pathTimer.current = setInterval(() => {
+      pi = (pi + 1) % PATH_PLACEHOLDERS.length;
+      setPathPlaceholder(PATH_PLACEHOLDERS[pi]);
+      setPathAnimate((a) => !a);
+    }, CYCLE_MS);
     return () => {
-      if (typeTimer.current) clearTimeout(typeTimer.current);
+      if (pathTimer.current) clearInterval(pathTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    let ei = 0;
+    errorTimer.current = setInterval(() => {
+      ei = (ei + 1) % ERROR_PLACEHOLDERS.length;
+      setErrorPlaceholder(ERROR_PLACEHOLDERS[ei]);
+      setErrorAnimate((a) => !a);
+    }, CYCLE_MS);
+    return () => {
+      if (errorTimer.current) clearInterval(errorTimer.current);
     };
   }, []);
 
@@ -473,10 +437,9 @@ function WorkspaceScreen({
             <div className="input-wrap">
               <input
                 id="project-path-input"
-                className="form-input"
+                className={`form-input placeholder-scroll ${pathAnimate ? "scroll-active" : ""}`}
                 type="text"
-                key={renderKey}
-                placeholder={pathTextRef.current}
+                placeholder={pathPlaceholder}
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 disabled={investigating}
@@ -517,9 +480,8 @@ function WorkspaceScreen({
               <textarea
                 id="error-traceback-input"
                 ref={textareaRef}
-                className="form-textarea"
-                key={renderKey}
-                placeholder={errorTextRef.current}
+                className={`form-textarea placeholder-scroll ${errorAnimate ? "scroll-active" : ""}`}
+                placeholder={errorPlaceholder}
                 value={errorText}
                 onChange={handleTextareaChange}
                 disabled={investigating}
