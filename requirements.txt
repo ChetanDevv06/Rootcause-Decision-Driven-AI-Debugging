@@ -4,3 +4,6 @@ boto3==1.43.114
 botocore[crt]
 python-dotenv==1.2.4
 pytest
+fastapi>=0.135.0
+uvicorn>=0.31.1
+pydantic>=2.12.0,<3.0.0
