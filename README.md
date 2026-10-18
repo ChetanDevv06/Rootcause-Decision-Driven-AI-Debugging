@@ -4,13 +4,22 @@
 
 <br/><br/>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.14](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)](requirements.txt)
-[![Tests](https://img.shields.io/badge/Tests-176%20Passed-10B981?logo=pytest&logoColor=white)](tests/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](frontend/tsconfig.json)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135+-009688?logo=fastapi&logoColor=white)](src/api.py)
 [![React Vite](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite-61DAFB?logo=react&logoColor=black)](frontend/)
-[![Orchestrator: Strands Decider 2B](https://img.shields.io/badge/Decider-Strands%202B%20Local-818CF8)](src/decider_client.py)
-[![Synthesis: Amazon Bedrock](https://img.shields.io/badge/Synthesis-Bedrock%20Nova%20Micro-F59E0B?logo=amazonaws&logoColor=white)](src/analysis.py)
+[![Pydantic v2](https://img.shields.io/badge/Validation-Pydantic%20v2-E92063?logo=pydantic&logoColor=white)](src/api.py)
+<br/>
+[![Decider: Strands 2B](https://img.shields.io/badge/Decider-Strands%202B%20Local-818CF8?logo=huggingface&logoColor=white)](src/decider_client.py)
+[![Synthesis: Amazon Bedrock](https://img.shields.io/badge/Synthesis-Bedrock%20Nova%20Micro-FF9900?logo=amazonaws&logoColor=white)](src/analysis.py)
+[![AWS SDK: Boto3](https://img.shields.io/badge/AWS%20SDK-Boto3-232F3E?logo=amazon&logoColor=white)](src/analysis.py)
+[![Design: Google Stitch](https://img.shields.io/badge/Design-Google%20Stitch-4285F4?logo=google&logoColor=white)](https://stitch.withgoogle.com)
+[![Diagrams: Draw.io](https://img.shields.io/badge/Diagrams-Draw.io-F08705?logo=diagramsdotnet&logoColor=white)](docs/architecture/)
+<br/>
+[![Tests](https://img.shields.io/badge/Tests-176%20Passed-10B981?logo=pytest&logoColor=white)](tests/)
+[![Coverage: 91%](https://img.shields.io/badge/Coverage-91%25-22C55E?logo=codecov&logoColor=white)](tests/)
+[![Code Style: Ruff](https://img.shields.io/badge/Code%20Style-Ruff-000000?logo=ruff&logoColor=white)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Rootcause** is an evidence-first, decision-driven autonomous AI debugging engine for Python applications.<br/>
 It replaces unconstrained generative LLM chat loops with **deterministic, bounded action selection** via **Strands Decider 2B**<br/>
@@ -310,13 +319,15 @@ Rootcause includes 10 self-contained, reproducible test fixtures under `examples
 | Layer | Technology | Version | Architectural Responsibility |
 |:---|:---|:---|:---|
 | **Web UI** | React / TypeScript / Vite | React 18, Vite 5 | Interactive diagnostic dashboard, scenario selector, evidence graph, incident log. |
-| **API Server** | FastAPI / Uvicorn | FastAPI 0.135+, Uvicorn 0.31+ | REST endpoints (`/api/investigations`, `/api/health`, `/api/demo-scenarios`). |
+| **UI Design System** | Google Stitch | Stitch v2.4 | System token architecture, interactive timeline, and responsive diagnostic layouts. |
+| **Architecture Diagrams** | Draw.io (diagrams.net) | Draw.io 24+ | Editable vector architecture schemas (Context, Flow, Sequence, Component). |
+| **API Server** | FastAPI / Uvicorn | FastAPI 0.135+, Uvicorn 0.31+ | REST endpoints (`/api/investigations`, `/api/health`, `/api/demo-scenarios`, `/api/telemetry`). |
 | **Orchestrator** | Python 3.14 Standard Lib | Python 3.14 | Bounded state machine, action deduplication, subprocess execution limits. |
 | **Decision Model** | Strands Decider 2B | strands-decider 1.61+ | Local HTTP service (:8099) performing categorical next-action choice. |
 | **Reasoning Model** | Amazon Bedrock Nova Micro | amazon.nova-micro-v1:0 | Cloud inference over AWS Converse API for structured causal report generation. |
 | **AWS SDK** | Boto3 / Botocore | boto3 1.43+, botocore[crt] | Secure AWS API client with connect/read timeout configurations. |
 | **Validation** | Pydantic v2 | pydantic 2.12+ | Request/response data validation and schema serialization. |
-| **Testing** | Pytest | pytest 8.0+ | Automated unit, regression, and fixture reproduction test suites. |
+| **Testing & Linting** | Pytest / Ruff | pytest 8.0+, ruff 0.6+ | Automated unit, regression, and fixture reproduction test suites. |
 
 ---
 
