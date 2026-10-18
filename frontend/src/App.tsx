@@ -329,7 +329,8 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const PATH_PLACEHOLDERS = [
     "E:\\Projects\\my-app or /home/user/my-app",
@@ -351,9 +352,9 @@ function WorkspaceScreen({
   const errorPhaseRef = useRef<"typing" | "holding" | "deleting" | "resting">("typing");
   const [renderKey, setRenderKey] = useState(0);
 
-  const TYPE_SPEED = 45;
-  const HOLD_END = 2600;
-  const REST_BETWEEN = 1000;
+  const TYPE_SPEED = 40;
+  const HOLD_END = 2400;
+  const REST_BETWEEN = 900;
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
@@ -370,60 +371,75 @@ function WorkspaceScreen({
     textareaRef.current?.focus();
   }
 
-  // Typewriter effect for placeholders — types out, holds, deletes, then next
+  // Independent typewriter loop for project-directory placeholder
   useEffect(() => {
     function tick() {
-      const pTarget = PATH_PLACEHOLDERS[pathIndexRef.current];
-      const eTarget = ERROR_PLACEHOLDERS[errorIndexRef.current];
-      let nextDelay = TYPE_SPEED;
+      const target = PATH_PLACEHOLDERS[pathIndexRef.current];
+      const phase = pathPhaseRef.current;
+      let delay = TYPE_SPEED;
 
-      const pp = pathPhaseRef.current;
-      if (pp === "typing") {
-        pathTextRef.current = pTarget.slice(0, pathTextRef.current.length + 1);
-        if (pathTextRef.current === pTarget) {
+      if (phase === "typing") {
+        pathTextRef.current = target.slice(0, pathTextRef.current.length + 1);
+        if (pathTextRef.current === target) {
           pathPhaseRef.current = "holding";
-          nextDelay = HOLD_END;
+          delay = HOLD_END;
         }
-      } else if (pp === "holding") {
+      } else if (phase === "holding") {
         pathPhaseRef.current = "deleting";
-      } else if (pp === "deleting") {
+      } else if (phase === "deleting") {
         pathTextRef.current = pathTextRef.current.slice(0, -1);
         if (pathTextRef.current === "") {
           pathPhaseRef.current = "resting";
           pathIndexRef.current = (pathIndexRef.current + 1) % PATH_PLACEHOLDERS.length;
-          nextDelay = REST_BETWEEN;
+          delay = REST_BETWEEN;
         }
-      } else if (pp === "resting") {
+      } else if (phase === "resting") {
         pathPhaseRef.current = "typing";
       }
 
-      const ep = errorPhaseRef.current;
-      if (ep === "typing") {
-        errorTextRef.current = eTarget.slice(0, errorTextRef.current.length + 1);
-        if (errorTextRef.current === eTarget) {
+      setRenderKey((k) => k + 1);
+      pathTimer.current = setTimeout(tick, delay);
+    }
+
+    pathTimer.current = setTimeout(tick, TYPE_SPEED);
+    return () => {
+      if (pathTimer.current) clearTimeout(pathTimer.current);
+    };
+  }, []);
+
+  // Independent typewriter loop for error-details placeholder
+  useEffect(() => {
+    function tick() {
+      const target = ERROR_PLACEHOLDERS[errorIndexRef.current];
+      const phase = errorPhaseRef.current;
+      let delay = TYPE_SPEED;
+
+      if (phase === "typing") {
+        errorTextRef.current = target.slice(0, errorTextRef.current.length + 1);
+        if (errorTextRef.current === target) {
           errorPhaseRef.current = "holding";
-          nextDelay = Math.max(nextDelay, HOLD_END);
+          delay = HOLD_END;
         }
-      } else if (ep === "holding") {
+      } else if (phase === "holding") {
         errorPhaseRef.current = "deleting";
-      } else if (ep === "deleting") {
+      } else if (phase === "deleting") {
         errorTextRef.current = errorTextRef.current.slice(0, -1);
         if (errorTextRef.current === "") {
           errorPhaseRef.current = "resting";
           errorIndexRef.current = (errorIndexRef.current + 1) % ERROR_PLACEHOLDERS.length;
-          nextDelay = Math.max(nextDelay, REST_BETWEEN);
+          delay = REST_BETWEEN;
         }
-      } else if (ep === "resting") {
+      } else if (phase === "resting") {
         errorPhaseRef.current = "typing";
       }
 
       setRenderKey((k) => k + 1);
-      typeTimer.current = setTimeout(tick, nextDelay);
+      errorTimer.current = setTimeout(tick, delay);
     }
 
-    typeTimer.current = setTimeout(tick, TYPE_SPEED);
+    errorTimer.current = setTimeout(tick, TYPE_SPEED);
     return () => {
-      if (typeTimer.current) clearTimeout(typeTimer.current);
+      if (errorTimer.current) clearTimeout(errorTimer.current);
     };
   }, []);
 
