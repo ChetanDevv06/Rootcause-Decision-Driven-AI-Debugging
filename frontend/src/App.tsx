@@ -346,8 +346,6 @@ function WorkspaceScreen({
   ];
   const [pathPlaceholder, setPathPlaceholder] = useState(PATH_PLACEHOLDERS[0]);
   const [errorPlaceholder, setErrorPlaceholder] = useState(ERROR_PLACEHOLDERS[0]);
-  const [pathAnimate, setPathAnimate] = useState(false);
-  const [errorAnimate, setErrorAnimate] = useState(false);
 
   const CYCLE_MS = 5000;
 
@@ -366,13 +364,12 @@ function WorkspaceScreen({
     textareaRef.current?.focus();
   }
 
-  // Independent scroll-wheel placeholder cycles — each field scrolls through its own list
+  // Independent placeholder cycles — each field scrolls through its own list
   useEffect(() => {
     let pi = 0;
     pathTimer.current = setInterval(() => {
       pi = (pi + 1) % PATH_PLACEHOLDERS.length;
       setPathPlaceholder(PATH_PLACEHOLDERS[pi]);
-      setPathAnimate((a) => !a);
     }, CYCLE_MS);
     return () => {
       if (pathTimer.current) clearInterval(pathTimer.current);
@@ -384,7 +381,6 @@ function WorkspaceScreen({
     errorTimer.current = setInterval(() => {
       ei = (ei + 1) % ERROR_PLACEHOLDERS.length;
       setErrorPlaceholder(ERROR_PLACEHOLDERS[ei]);
-      setErrorAnimate((a) => !a);
     }, CYCLE_MS);
     return () => {
       if (errorTimer.current) clearInterval(errorTimer.current);
@@ -437,7 +433,7 @@ function WorkspaceScreen({
             <div className="input-wrap">
               <input
                 id="project-path-input"
-                className={`form-input placeholder-scroll ${pathAnimate ? "scroll-active" : ""}`}
+                className="form-input"
                 type="text"
                 placeholder={pathPlaceholder}
                 value={projectPath}
@@ -480,7 +476,7 @@ function WorkspaceScreen({
               <textarea
                 id="error-traceback-input"
                 ref={textareaRef}
-                className={`form-textarea placeholder-scroll ${errorAnimate ? "scroll-active" : ""}`}
+                className="form-textarea"
                 placeholder={errorPlaceholder}
                 value={errorText}
                 onChange={handleTextareaChange}
