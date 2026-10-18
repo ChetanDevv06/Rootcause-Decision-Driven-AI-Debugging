@@ -329,6 +329,22 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const placeholderTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const PATH_PLACEHOLDERS = [
+    "E:\\Projects\\my-app or /home/user/my-app",
+    "C:\\Users\\you\\my-react-app",
+    "/opt/rootcause/my-service",
+    "~/projects/backend-api",
+  ];
+  const ERROR_PLACEHOLDERS = [
+    "Paste Python tracebacks, exception logs, or terminal error output here (raw stdout/stderr supported)...",
+    "Include full stack trace with file names and line numbers for better accuracy.",
+    "Paste a JavaScript/TypeScript error from console or browser DevTools.",
+    "Paste a Java stack trace or exception log from your server logs.",
+  ];
+  const [pathPlaceholder, setPathPlaceholder] = useState(PATH_PLACEHOLDERS[0]);
+  const [errorPlaceholder, setErrorPlaceholder] = useState(ERROR_PLACEHOLDERS[0]);
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
@@ -344,6 +360,21 @@ function WorkspaceScreen({
     });
     textareaRef.current?.focus();
   }
+
+  // Cycle placeholders dynamically after a fixed timeout
+  useEffect(() => {
+    let pi = PATH_PLACEHOLDERS.indexOf(pathPlaceholder);
+    let ei = ERROR_PLACEHOLDERS.indexOf(errorPlaceholder);
+    placeholderTimer.current = setInterval(() => {
+      pi = (pi + 1) % PATH_PLACEHOLDERS.length;
+      ei = (ei + 1) % ERROR_PLACEHOLDERS.length;
+      setPathPlaceholder(PATH_PLACEHOLDERS[pi]);
+      setErrorPlaceholder(ERROR_PLACEHOLDERS[ei]);
+    }, 4000);
+    return () => {
+      if (placeholderTimer.current) clearInterval(placeholderTimer.current);
+    };
+  }, [pathPlaceholder, errorPlaceholder]);
 
   const isReady = healthStatus === "healthy" && !investigating;
 
@@ -393,12 +424,12 @@ function WorkspaceScreen({
                 id="project-path-input"
                 className="form-input"
                 type="text"
-                placeholder="E:\Projects\my-app or /home/user/my-app"
+                placeholder={pathPlaceholder}
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 disabled={investigating}
                 autoComplete="off"
-                spellCheck={false}
+                spellCheck="false"
               />
               <button
                 className="form-input-browse"
@@ -435,12 +466,12 @@ function WorkspaceScreen({
                 id="error-traceback-input"
                 ref={textareaRef}
                 className="form-textarea"
-                placeholder="Paste Python tracebacks, exception logs, or terminal error output here (raw stdout/stderr supported)..."
+                placeholder={errorPlaceholder}
                 value={errorText}
                 onChange={handleTextareaChange}
                 disabled={investigating}
                 rows={7}
-                spellCheck={false}
+                spellCheck="false"
               />
               <span className="textarea-counter" aria-live="polite">
                 {charCount.chars} chars • {charCount.lines} lines
