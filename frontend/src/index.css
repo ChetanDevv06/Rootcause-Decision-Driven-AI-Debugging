@@ -5439,6 +5439,8 @@ details[open] .trace-accordion-arrow { transform: rotate(90deg); }
   flex-shrink: 0;
 }
 .stitch-status-dot--green { background: var(--color-success); }
+.stitch-status-dot--yellow { background: var(--color-warning); }
+.stitch-status-dot--red { background: var(--color-error); }
 
 /* ── Sidebar ── */
 .stitch-settings-sidebar {
@@ -5559,6 +5561,14 @@ details[open] .trace-accordion-arrow { transform: rotate(90deg); }
   transition: background 0.15s, color 0.15s;
 }
 .stitch-benchmark-btn:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+.stitch-benchmark-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.stitch-benchmark-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-primary);
+  text-align: center;
+  margin-top: 4px;
+}
 
 /* ── Environment Isolation ── */
 .stitch-env-fields { display: flex; flex-direction: column; gap: 8px; }

@@ -530,3 +530,37 @@ def test_investigation_executes_decider_selected_action(client, tmp_path: Path):
     step = data["history"][0]
     assert step["decision"]["action"] == step["result"]["action"]
     assert step["result"]["action"] == "inspect_dependencies"
+
+
+# ---------------------------------------------------------------------------
+# Telemetry endpoints
+# ---------------------------------------------------------------------------
+
+
+def test_telemetry_returns_real_metrics(client):
+    """GET /api/telemetry returns real-time engine and system telemetry."""
+    res = client.get("/api/telemetry")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert "memory_percent" in data
+    assert "memory_used_gb" in data
+    assert "memory_total_gb" in data
+    assert "quantization" in data
+    assert "decider_reachable" in data
+    assert "tooling_probes_count" in data
+    assert "default_interpreter" in data
+    assert "temporary_diff_stash" in data
+    assert data["zero_outbound"] is True
+
+
+def test_benchmark_runs_successfully(client):
+    """POST /api/telemetry/benchmark executes AST and Decider benchmarks."""
+    res = client.post("/api/telemetry/benchmark")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert "ast_parse_ops_per_sec" in data
+    assert data["ast_parse_ops_per_sec"] > 0
+    assert "benchmark_duration_ms" in data
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function Icon({
   name,
@@ -16,6 +16,31 @@ function Icon({
   );
 }
 
+interface EngineTelemetry {
+  status: string;
+  memory_percent: number;
+  memory_used_gb: number;
+  memory_total_gb: number;
+  quantization: string;
+  decider_reachable: boolean;
+  decider_latency_ms: number | null;
+  decider_model: string;
+  decider_device: string;
+  decider_num_slots: number;
+  bedrock_configured: boolean;
+  bedrock_model: string;
+  bedrock_region: string;
+  bedrock_p95_ms: number | null;
+  ast_cache_size_mb: number;
+  tooling_probes_count: number;
+  tooling_probes: string[];
+  default_interpreter: string;
+  temporary_diff_stash: string;
+  zero_outbound: boolean;
+  platform: string;
+  python_version: string;
+}
+
 export function SettingsScreen({
   onClose,
 }: {
@@ -26,6 +51,57 @@ export function SettingsScreen({
   const [sandboxEnabled, setSandboxEnabled] = useState(true);
   const [verificationPolicy, setVerificationPolicy] = useState<"strict" | "balanced" | "exploratory">("strict");
   const [saved, setSaved] = useState(false);
+  const [telemetry, setTelemetry] = useState<EngineTelemetry | null>(null);
+  const [benchmarking, setBenchmarking] = useState(false);
+  const [benchmarkResult, setBenchmarkResult] = useState<string | null>(null);
+
+  // Poll real-time engine telemetry
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchTelemetry() {
+      try {
+        const res = await fetch("/api/telemetry");
+        if (res.ok) {
+          const data: EngineTelemetry = await res.json();
+          if (mounted) {
+            setTelemetry(data);
+          }
+        }
+      } catch {
+        // Best-effort polling
+      }
+    }
+
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 3000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  async function handleRunBenchmark() {
+    setBenchmarking(true);
+    setBenchmarkResult(null);
+    try {
+      const res = await fetch("/api/telemetry/benchmark", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        const latencyText = data.decider_latency_ms !== null ? `${data.decider_latency_ms}ms` : "N/A";
+        setBenchmarkResult(`Decider: ${latencyText} | AST: ${data.ast_parse_ops_per_sec} ops/s`);
+        const tRes = await fetch("/api/telemetry");
+        if (tRes.ok) {
+          setTelemetry(await tRes.json());
+        }
+      }
+    } catch {
+      setBenchmarkResult("Benchmark failed");
+    } finally {
+      setBenchmarking(false);
+      setTimeout(() => setBenchmarkResult(null), 5000);
+    }
+  }
 
   function handleSave() {
     setSaved(true);
@@ -315,13 +391,15 @@ export function SettingsScreen({
                     <div className="stitch-bedrock-info">
                       <div className="stitch-bedrock-name-row">
                         <span className="stitch-card-title">Bedrock Analysis Provider</span>
-                        <span className="stitch-badge stitch-badge--success-xs">Active</span>
+                        <span className={`stitch-badge ${telemetry?.bedrock_configured ? "stitch-badge--success-xs" : "stitch-badge--primary-sm"}`}>
+                          {telemetry?.bedrock_configured ? "Active" : "Unconfigured"}
+                        </span>
                       </div>
-                      <span className="stitch-bedrock-model">anthropic.claude-3-5-sonnet-20241022-v2:0</span>
+                      <span className="stitch-bedrock-model">{telemetry?.bedrock_model || "amazon.nova-micro-v1:0"}</span>
                     </div>
                     <div className="stitch-bedrock-region">
-                      <span className="stitch-region-pill">us-east-1</span>
-                      <span className="stitch-status-dot stitch-status-dot--green" />
+                      <span className="stitch-region-pill">{telemetry?.bedrock_region || "ap-southeast-2"}</span>
+                      <span className={`stitch-status-dot ${telemetry?.bedrock_configured ? "stitch-status-dot--green" : "stitch-status-dot--yellow"}`} />
                     </div>
                   </div>
 
@@ -339,13 +417,17 @@ export function SettingsScreen({
                     <div className="stitch-local-model-left">
                       <Icon name="laptop_chromebook" className="icon-20" style={{ color: "var(--color-text-secondary)" }} />
                       <div>
-                        <span className="stitch-local-model-name">Local Strands Decider 2B</span>
-                        <span className="stitch-local-model-desc">On-device quantized heuristic runner</span>
+                        <span className="stitch-local-model-name">{telemetry?.decider_model || "Local Strands Decider 2B"}</span>
+                        <span className="stitch-local-model-desc">
+                          {telemetry?.decider_device ? `On-device ${telemetry.decider_device.toUpperCase()} heuristic runner (${telemetry.decider_num_slots} slots)` : "On-device quantized heuristic runner"}
+                        </span>
                       </div>
                     </div>
                     <div className="stitch-local-model-status">
-                      <span className="stitch-status-text--green">Engaged</span>
-                      <span className="stitch-status-dot stitch-status-dot--green" />
+                      <span className={telemetry?.decider_reachable ? "stitch-status-text--green" : "stitch-status-text--muted"}>
+                        {telemetry?.decider_reachable ? "Engaged (Online)" : "Offline"}
+                      </span>
+                      <span className={`stitch-status-dot ${telemetry?.decider_reachable ? "stitch-status-dot--green" : "stitch-status-dot--red"}`} />
                     </div>
                   </div>
                 </div>
@@ -373,40 +455,69 @@ export function SettingsScreen({
             </div>
 
             {/* Memory ring + value */}
-            <div className="stitch-telemetry-ring-row">
-              <div className="stitch-ring-wrap">
-                <svg className="stitch-ring-svg" viewBox="0 0 36 36">
-                  <path className="stitch-ring-track" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3.5" />
-                  <path className="stitch-ring-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeDasharray="68, 100" strokeLinecap="round" strokeWidth="3.5" />
-                </svg>
-                <span className="stitch-ring-label">68%</span>
-              </div>
-              <div>
-                <span className="stitch-telemetry-mem-desc">Model Memory Footprint</span>
-                <span className="stitch-telemetry-mem-val">1.36 GB / 2.00 GB</span>
-                <span className="stitch-telemetry-quant">Quantization: Q4_K_M</span>
-              </div>
-            </div>
+            {(() => {
+              const memPct = telemetry ? Math.min(Math.max(telemetry.memory_percent, 0), 100) : 68;
+              const usedGb = telemetry ? telemetry.memory_used_gb.toFixed(2) : "1.36";
+              const totalGb = telemetry ? telemetry.memory_total_gb.toFixed(2) : "2.00";
+              const quant = telemetry ? telemetry.quantization : "Q4_K_M";
+              const deciderLatency = telemetry?.decider_reachable && telemetry.decider_latency_ms !== null
+                ? `${telemetry.decider_latency_ms.toFixed(1)}ms`
+                : telemetry?.decider_reachable === false
+                  ? "Offline"
+                  : "Measuring...";
+              const bedrockLatency = telemetry?.bedrock_configured && telemetry.bedrock_p95_ms !== null
+                ? `${telemetry.bedrock_p95_ms.toFixed(0)}ms`
+                : "Not Configured";
+              const astCache = telemetry ? `${telemetry.ast_cache_size_mb.toFixed(1)} MB` : "4.8 MB";
+              const probesCount = telemetry ? `${telemetry.tooling_probes_count} Available` : "14 Available";
 
-            {/* Metrics list */}
-            <div className="stitch-metrics-list">
-              {[
-                { label: "Inference Latency (Local)", value: "18.4ms", highlight: false },
-                { label: "Bedrock P95 Latency", value: "642ms", highlight: false },
-                { label: "AST Index Cache Size", value: "4.8 MB", highlight: false },
-                { label: "Decider Tooling Probes", value: "14 Available", highlight: true },
-              ].map(({ label, value, highlight }) => (
-                <div key={label} className="stitch-metric-row">
-                  <span className="stitch-metric-label">{label}</span>
-                  <span className={`stitch-metric-value ${highlight ? "stitch-metric-value--green" : ""}`}>{value}</span>
-                </div>
-              ))}
-            </div>
+              return (
+                <>
+                  <div className="stitch-telemetry-ring-row">
+                    <div className="stitch-ring-wrap">
+                      <svg className="stitch-ring-svg" viewBox="0 0 36 36">
+                        <path className="stitch-ring-track" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3.5" />
+                        <path className="stitch-ring-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeDasharray={`${memPct}, 100`} strokeLinecap="round" strokeWidth="3.5" />
+                      </svg>
+                      <span className="stitch-ring-label">{memPct.toFixed(0)}%</span>
+                    </div>
+                    <div>
+                      <span className="stitch-telemetry-mem-desc">Model Memory Footprint</span>
+                      <span className="stitch-telemetry-mem-val">{usedGb} GB / {totalGb} GB</span>
+                      <span className="stitch-telemetry-quant">Quantization: {quant}</span>
+                    </div>
+                  </div>
 
-            <button className="stitch-benchmark-btn" type="button">
-              <Icon name="speed" className="icon-16" />
-              Run Engine Benchmark
-            </button>
+                  {/* Metrics list */}
+                  <div className="stitch-metrics-list">
+                    {[
+                      { label: "Inference Latency (Local)", value: deciderLatency, highlight: telemetry?.decider_reachable ?? false },
+                      { label: "Bedrock P95 Latency", value: bedrockLatency, highlight: false },
+                      { label: "AST Index Cache Size", value: astCache, highlight: false },
+                      { label: "Decider Tooling Probes", value: probesCount, highlight: true },
+                    ].map(({ label, value, highlight }) => (
+                      <div key={label} className="stitch-metric-row">
+                        <span className="stitch-metric-label">{label}</span>
+                        <span className={`stitch-metric-value ${highlight ? "stitch-metric-value--green" : ""}`}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    className="stitch-benchmark-btn"
+                    type="button"
+                    onClick={handleRunBenchmark}
+                    disabled={benchmarking}
+                  >
+                    <Icon name={benchmarking ? "sync" : "speed"} className={`icon-16 ${benchmarking ? "anim-spin" : ""}`} />
+                    {benchmarking ? "Running Benchmark..." : "Run Engine Benchmark"}
+                  </button>
+                  {benchmarkResult && (
+                    <div className="stitch-benchmark-note">{benchmarkResult}</div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Environment Isolation card */}
@@ -421,11 +532,15 @@ export function SettingsScreen({
             <div className="stitch-env-fields">
               <div className="stitch-env-field">
                 <span className="stitch-env-field-label">Default Interpreter</span>
-                <span className="stitch-env-field-value">/opt/homebrew/bin/python3.11</span>
+                <span className="stitch-env-field-value" style={{ wordBreak: "break-all" }} title={telemetry?.default_interpreter || "python"}>
+                  {telemetry?.default_interpreter || "/opt/homebrew/bin/python3.11"}
+                </span>
               </div>
               <div className="stitch-env-field">
                 <span className="stitch-env-field-label">Temporary Diff Stash</span>
-                <span className="stitch-env-field-value">~/.rootcause/cache/patches/</span>
+                <span className="stitch-env-field-value" style={{ wordBreak: "break-all" }} title={telemetry?.temporary_diff_stash || "~/.rootcause/cache/patches/"}>
+                  {telemetry?.temporary_diff_stash || "~/.rootcause/cache/patches/"}
+                </span>
               </div>
             </div>
             <div className="stitch-env-zero-out">
