@@ -364,6 +364,7 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const browseInputRef = useRef<HTMLInputElement>(null);
   const pathTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const errorTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -397,6 +398,20 @@ function WorkspaceScreen({
       lines: SAMPLE_TRACEBACK.split("\n").length,
     });
     textareaRef.current?.focus();
+  }
+
+  function handleBrowse() {
+    const el = browseInputRef.current;
+    if (!el) return;
+    el.setAttribute("webkitdirectory", "");
+    el.setAttribute("directory", "");
+    el.click();
+  }
+
+  function handleBrowseChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Browser security prevents reading a folder's absolute path, so we only
+    // open the native picker here; the user types (or pastes) the path manually.
+    if (browseInputRef.current) browseInputRef.current.value = "";
   }
 
   function handleDemoScenarioChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -488,6 +503,16 @@ function WorkspaceScreen({
               </label>
             </div>
             <div className="input-wrap">
+              <button
+                className="form-input-browse"
+                type="button"
+                title="Browse"
+                aria-label="Browse for project directory"
+                onClick={handleBrowse}
+                disabled={investigating}
+              >
+                <Icon name="folder" className="icon-16" style={{ flexShrink: 0 }} />
+              </button>
               <input
                 id="project-path-input"
                 className="form-input"
@@ -499,17 +524,12 @@ function WorkspaceScreen({
                 autoComplete="off"
                 spellCheck="false"
               />
-              <button
-                className="form-input-browse"
-                type="button"
-                aria-label="Browse for project directory (not available — enter path manually)"
-                title="File system browse is not available. Enter the path manually."
-                disabled
-                style={{ opacity: 0.5, cursor: "not-allowed" }}
-              >
-                <Icon name="folder" className="icon-16" />
-                <span>Browse</span>
-              </button>
+              <input
+                ref={browseInputRef}
+                type="file"
+                style={{ display: "none" }}
+                onChange={handleBrowseChange}
+              />
               {demoScenarios.length > 0 && (
                 <button
                   className={`demo-btn ${selectedDemoScenario ? "demo-btn--active" : ""}`}
