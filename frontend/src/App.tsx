@@ -135,11 +135,13 @@ function TopNav({
   healthStatus,
   healthError,
   projectPath,
+  onSettings,
 }: {
   health: HealthStatus | null;
   healthStatus: string;
   healthError: string | null;
   projectPath: string;
+  onSettings: () => void;
 }) {
   const deciderReady = health?.decider_reachable;
   const bedrockOk = health?.bedrock_configured;
@@ -222,18 +224,10 @@ function TopNav({
           </div>
         </div>
 
-        {/* Docs */}
-        <a className="topnav-docs" href="#" aria-label="Documentation (placeholder)">Docs</a>
-
         {/* Settings */}
-        <button className="topnav-icon-btn" aria-label="Settings (placeholder)" type="button">
+        <button className="topnav-icon-btn" aria-label="Settings" type="button" onClick={onSettings}>
           <Icon name="settings" className="icon-20" />
         </button>
-
-        {/* Profile */}
-        <div className="topnav-avatar" aria-label="User profile">
-          <Icon name="person" className="icon-18" style={{ color: "var(--color-text-on-primary)" }} />
-        </div>
       </div>
     </header>
   );
@@ -364,6 +358,7 @@ function WorkspaceScreen({
   const [charCount, setCharCount] = useState({ chars: 0, lines: 0 });
   const [dryRun, setDryRun] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const browseInputRef = useRef<HTMLInputElement>(null);
   const pathTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const errorTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -397,6 +392,20 @@ function WorkspaceScreen({
       lines: SAMPLE_TRACEBACK.split("\n").length,
     });
     textareaRef.current?.focus();
+  }
+
+  function handleBrowse() {
+    const el = browseInputRef.current;
+    if (!el) return;
+    el.setAttribute("webkitdirectory", "");
+    el.setAttribute("directory", "");
+    el.click();
+  }
+
+  function handleBrowseChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Browser security prevents reading a folder's absolute path, so we only
+    // open the native picker here; the user types (or pastes) the path manually.
+    if (browseInputRef.current) browseInputRef.current.value = "";
   }
 
   function handleDemoScenarioChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -488,6 +497,16 @@ function WorkspaceScreen({
               </label>
             </div>
             <div className="input-wrap">
+              <button
+                className="form-input-browse"
+                type="button"
+                title="Browse"
+                aria-label="Browse for project directory"
+                onClick={handleBrowse}
+                disabled={investigating}
+              >
+                <Icon name="folder" className="icon-16" style={{ flexShrink: 0 }} />
+              </button>
               <input
                 id="project-path-input"
                 className="form-input"
@@ -499,17 +518,12 @@ function WorkspaceScreen({
                 autoComplete="off"
                 spellCheck="false"
               />
-              <button
-                className="form-input-browse"
-                type="button"
-                aria-label="Browse for project directory (not available — enter path manually)"
-                title="File system browse is not available. Enter the path manually."
-                disabled
-                style={{ opacity: 0.5, cursor: "not-allowed" }}
-              >
-                <Icon name="folder" className="icon-16" />
-                <span>Browse</span>
-              </button>
+              <input
+                ref={browseInputRef}
+                type="file"
+                style={{ display: "none" }}
+                onChange={handleBrowseChange}
+              />
               {demoScenarios.length > 0 && (
                 <button
                   className={`demo-btn ${selectedDemoScenario ? "demo-btn--active" : ""}`}
@@ -563,15 +577,6 @@ function WorkspaceScreen({
                 <Icon name="error_outline" className="icon-20" style={{ color: "var(--color-error)" }} />
                 <span>Error Details</span>
               </label>
-              <button
-                className="sample-btn"
-                type="button"
-                onClick={loadSampleTraceback}
-                disabled={investigating}
-              >
-                <Icon name="bolt" className="icon-16" />
-                <span>Load sample traceback: ModuleNotFoundError (psycopg)</span>
-              </button>
             </div>
             <div className="textarea-wrap">
               <textarea
@@ -1416,6 +1421,7 @@ function App() {
   const [demoScenariosLoading, setDemoScenariosLoading] = useState(true);
   const [demoScenariosError, setDemoScenariosError] = useState<string | null>(null);
   const [maxSteps, setMaxSteps] = useState(3);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const elapsedTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Health check on mount
@@ -1634,6 +1640,7 @@ function App() {
         healthStatus={appState.healthStatus}
         healthError={appState.healthError}
         projectPath={activeTab === "diagnosis" && screen !== "idle" ? projectPath : activeTab !== "diagnosis" ? projectPath || "~/projects/inventory-api" : ""}
+        onSettings={() => setSettingsOpen(true)}
       />
 
       {/* Sidebar — always visible */}
@@ -1646,8 +1653,60 @@ function App() {
 
       {/* Main content */}
       <div className="main-layout">
-        <main className="main-content" id="main-content" tabIndex={-1}>
-          {activeTab === "diagnosis" && (
+      <main className="main-content" id="main-content" tabIndex={-1}>
+        {settingsOpen && (
+          <div className="settings-page">
+            <div className="settings-header">
+              <button className="settings-back" type="button" onClick={() => setSettingsOpen(false)} aria-label="Back to investigation">
+                <Icon name="arrow_back" className="icon-18" style={{ flexShrink: 0 }} />
+                <span>Settings</span>
+              </button>
+              <h1 className="settings-title">Settings</h1>
+            </div>
+            <div className="settings-body">
+              <nav className="settings-nav" aria-label="Settings navigation">
+                <button className="settings-nav-item settings-nav-item--active" type="button">
+                  <Icon name="tune" className="icon-18" style={{ flexShrink: 0 }} />
+                  <span>General</span>
+                </button>
+                <button className="settings-nav-item" type="button">
+                  <Icon name="notifications" className="icon-18" style={{ flexShrink: 0 }} />
+                  <span>Notifications</span>
+                </button>
+                <button className="settings-nav-item" type="button">
+                  <Icon name="security" className="icon-18" style={{ flexShrink: 0 }} />
+                  <span>Security</span>
+                </button>
+              </nav>
+              <div className="settings-content">
+                <div className="settings-section">
+                  <h2 className="settings-section-title">General</h2>
+                  <div className="setting-row setting-row--toggle">
+                    <span className="setting-label">Enable analytics</span>
+                    <button className="setting-toggle setting-toggle--on" type="button" aria-checked="true" aria-label="Enable analytics">
+                      <span className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>On</span>
+                    </button>
+                  </div>
+                  <div className="setting-row setting-row--toggle">
+                    <span className="setting-label">Crash reporting</span>
+                    <button className="setting-toggle setting-toggle--on" type="button" aria-checked="true" aria-label="Crash reporting">
+                      <span className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>On</span>
+                    </button>
+                  </div>
+                  <div className="setting-row">
+                    <span className="setting-label">Theme</span>
+                    <div className="color-picker">
+                      <button className="color-chip color-chip--selected" type="button" aria-label="System theme" />
+                      <button className="color-chip" type="button" aria-label="Dark theme" />
+                      <button className="color-chip" type="button" aria-label="Light theme" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {!settingsOpen && activeTab === "diagnosis" && (
             <>
               {screen === "idle" && (
                 <WorkspaceScreen
@@ -1689,7 +1748,7 @@ function App() {
             </>
           )}
 
-          {activeTab === "history" && (
+          {!settingsOpen && activeTab === "history" && (
             <IncidentHistoryScreen
               incidents={incidents}
               projectPath={projectPath || "~/projects/inventory-api"}
@@ -1709,7 +1768,7 @@ function App() {
             />
           )}
 
-          {activeTab === "graph" && (
+          {!settingsOpen && activeTab === "graph" && (
             <EvidenceGraphScreen
               incident={selectedIncident}
               onBackToIncidents={() => setActiveTab("history")}
@@ -1724,7 +1783,7 @@ function App() {
             />
           )}
 
-          {activeTab === "remediation" && (
+          {!settingsOpen && activeTab === "remediation" && (
             <RemediationSuiteScreen
               incident={selectedIncident}
               onBackToIncidents={() => setActiveTab("history")}
