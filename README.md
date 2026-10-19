@@ -20,12 +20,13 @@
 [![Coverage: 91%](https://img.shields.io/badge/Coverage-91%25-22C55E?logo=codecov&logoColor=white)](tests/)
 [![Code Style: Ruff](https://img.shields.io/badge/Code%20Style-Ruff-000000?logo=ruff&logoColor=white)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Demo%20Video-FF0000?logo=youtube&logoColor=white)](https://youtu.be/Q1ntsp6uf_8?si=dKNmIRXtR0IGwrbA)
 
 **Rootcause** is an evidence-first, decision-driven autonomous AI debugging engine for Python applications.<br/>
 It replaces unconstrained generative LLM chat loops with **deterministic, bounded action selection** via **Strands Decider 2B**<br/>
 and **schema-enforced causal synthesis** via **Amazon Bedrock Nova Micro**.
 
-[Explore Architecture](#system-architecture) • [Demo Walkthrough](#reproducible-scenario-walkthrough) • [Quickstart Guide](#quickstart--installation) • [Security Model](docs/SECURITY.md) • [Engineering Log](docs/ENGINEERING-LOG.md)
+[▶ Watch YouTube Demo](https://youtu.be/Q1ntsp6uf_8?si=dKNmIRXtR0IGwrbA) • [Explore Architecture](#system-architecture) • [Demo Walkthrough](#reproducible-scenario-walkthrough) • [Quickstart Guide](#quickstart--installation) • [Security Model](docs/SECURITY.md) • [Engineering Log](docs/ENGINEERING-LOG.md)
 
 </div>
 
@@ -102,7 +103,7 @@ Rootcause Decision-First Architecture:
 
 ## Actual Product Interface
 
-Rootcause features a modern, real-time diagnostic workstation built with React, Vite, and vanilla CSS. The screenshots below demonstrate actual runtime operation against local test fixtures.
+Rootcause features a modern, real-time diagnostic workstation built with React, Vite, and vanilla CSS. Watch the [YouTube Walkthrough Demo](https://youtu.be/Q1ntsp6uf_8?si=dKNmIRXtR0IGwrbA) to see the system in action. The screenshots below demonstrate actual runtime operation against local test fixtures.
 
 ### 1. Diagnostic Workspace (Clean State)
 The primary workspace provides environment telemetry (FastAPI engine status, local Decider 2B connection, Bedrock availability), target repository selection, and stack trace ingestion.
